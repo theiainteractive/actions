@@ -94,10 +94,13 @@ jobs:
         with:
           lfs: true
 
-      - name: Run Tests
+      - name: Dotenv
         run: |
-          [[ "${{ needs.meta.outputs.type }}" == "release" ]] && echo "production" > .env || echo "dev_remote" > .env
-          make test ue=${{ matrix.ue_version }}
+          [[ "${{ needs.meta.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="dev_remote"
+          make dev ue=${{ matrix.ue_version }} platform=${{ matrix.host_platform }} version=${{ needs.meta.outputs.version }} environment=$ENVIRONMENT 
+
+      - name: Run Tests
+        run: make test
 
   build:
     name: Build for UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
@@ -111,15 +114,15 @@ jobs:
           lfs: true
           token: ${{ secrets.token }}
       
-      - name: Make Dotenv & Echo Env
+      - name: Dotenv
         run: |
-          [[ "${{ needs.meta.outputs.type }}" == "release" ]] && echo "production" > .env || echo "dev_remote" > .env
-          make env ue=${{ matrix.ue_version }} platform=${{ matrix.host_platform }} version=${{ needs.meta.outputs.version }}
+          [[ "${{ needs.meta.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="dev_remote"
+          make dev ue=${{ matrix.ue_version }} platform=${{ matrix.host_platform }} version=${{ needs.meta.outputs.version }} environment=$ENVIRONMENT 
 
       - name: Make Target Package/Build
         run: |
           [[ "${{ needs.meta.outputs.type }}" == "release" ]] && TARGET=package || TARGET=build
-          make $TARGET ue=${{ matrix.ue_version }} platform=${{ matrix.host_platform }} version=${{ needs.meta.outputs.version }}
+          make $TARGET
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -129,7 +132,7 @@ jobs:
           aws-region: eu-central-1
 
       - name: Deploy Artifact
-        run: make deploy ue=${{ matrix.ue_version }} platform=${{ matrix.host_platform }} version=${{ needs.meta.outputs.version }}
+        run: make deploy
 
       - name: Cleanup
         if: always()
@@ -175,7 +178,9 @@ jobs:
 
       - name: Inject Env into GHA
         id: inject
-        run: echo "production" > .env && make env-inject ue=${{ matrix.ue_version }} platform=${{ matrix.host_platform }} version=${{ needs.meta.outputs.version }}
+        run: |
+          make dev ue=${{ matrix.ue_version }} platform=${{ matrix.host_platform }} version=${{ needs.meta.outputs.version }} environment=production
+          make env-inject
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
