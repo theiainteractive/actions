@@ -1,0 +1,243 @@
+name: Test, Build, Deploy (CI/CD)
+
+on:
+  workflow_call:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  meta:
+    name: Generate Metadata
+    runs-on: windows-10
+    outputs:
+      type: ${{ steps.releaseCheck.outputs.type }}
+      version: ${{ steps.releaseVersion.outputs.version || steps.buildVersion.outputs.version }}
+      notes: ${{ steps.releaseNotes.outputs.notes }}
+      matrix: ${{ steps.generateMatrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          lfs: true
+          fetch-depth: 0 # Needed for semantic versioning below
+
+      - name: Check Release
+        id: releaseCheck
+        run: |
+          if [[ "${{ github.event.inputs.type }}" == "release" \
+              || ( "${{ github.ref }}" =~ "release/" \
+                && `git rev-parse @:VERSION` != `git rev-parse @~:VERSION` \
+                && "${{ github.event_name }}" != "pull_request" ) ]]
+          then
+            echo "Setting output to release"
+            echo '::set-output name=type::release'
+          else
+            echo "Setting output to build"
+            echo '::set-output name=type::build'
+          fi
+
+      - name: Read Release Version
+        if: steps.releaseCheck.outputs.type=='release'
+        id: releaseVersion
+        run: |
+          if [[ ! -z "${{ github.event.inputs.version }}" ]]; then
+            echo '::set-output name=version::${{ github.event.inputs.version }}'
+          else
+            echo "::set-output name=version::$(head -1 VERSION | xargs)"
+          fi
+
+      - name: Read Release Notes
+        if: steps.releaseCheck.outputs.type=='release'
+        id: releaseNotes
+        run: |
+          sed -i 's/<version>/${{ steps.releaseVersion.outputs.version }}/g' RELEASE.md
+          RELEASE=$(cat RELEASE.md)
+          RELEASE="${RELEASE//'%'/'%25'}"
+          RELEASE="${RELEASE//$'\n'/'%0A'}"
+          RELEASE="${RELEASE//$'\r'/'%0D'}"
+          echo "::set-output name=notes::$RELEASE"
+
+      - name: Generate Build Version
+        if: steps.releaseCheck.outputs.type!='release'
+        id: buildVersion
+        uses: paulhatch/semantic-version@v4.0.2
+        with:
+          format: '${major}.${minor}.${patch}-dev${increment}'
+
+      - name: Setup Job Matrixes
+        id: generateMatrix
+        run: |
+          [[ "${{ steps.releaseCheck.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="dev_remote"
+          UE_VERSIONS=[\"$(yq -r .envs.\"$ENVIRONMENT\".ue_versions config.yml | sed 's/ /\",\"/g')\"]
+          HOST_PLATFORMS=[\"$(yq -r .envs.\"$ENVIRONMENT\".host_platforms config.yml | sed 's/ /\",\"/g')\"]
+          MATRIX="{\"ue_version\":$UE_VERSIONS,\"host_platform\":$HOST_PLATFORMS}"
+          echo "::set-output name=matrix::$MATRIX"
+
+  test:
+    name: Tests for UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
+    runs-on: ${{ matrix.host_platform }}
+    needs: [meta]
+    continue-on-error: true
+    strategy:
+      matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          lfs: true
+
+      - name: Run Tests
+        run: |
+          [[ "${{ needs.meta.outputs.type }}" == "release" ]] && echo "production" > .env || echo "dev_remote" > .env
+          make test ue=${{ matrix.ue_version }}
+
+  build:
+    name: Build for UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
+    runs-on: ${{ matrix.host_platform }}
+    needs: [meta, test]
+    strategy:
+      matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          lfs: true
+          token: ${{ secrets.REPO_SCOPED_TOKEN }}
+      
+      - name: Make Dotenv & Echo Env
+        run: |
+          [[ "${{ needs.meta.outputs.type }}" == "release" ]] && echo "production" > .env || echo "dev_remote" > .env
+          make env ue=${{ matrix.ue_version }} platform=${{ matrix.host_platform }} version=${{ needs.meta.outputs.version }}
+
+      - name: Make Target Package/Build
+        run: |
+          [[ "${{ needs.meta.outputs.type }}" == "release" ]] && TARGET=package || TARGET=build
+          make $TARGET ue=${{ matrix.ue_version }} platform=${{ matrix.host_platform }} version=${{ needs.meta.outputs.version }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+
+      - name: Deploy Artifact
+        run: make deploy ue=${{ matrix.ue_version }} platform=${{ matrix.host_platform }} version=${{ needs.meta.outputs.version }}
+
+      - name: Cleanup
+        if: always()
+        run: make clean
+
+  release:
+    name: Deploy Release
+    runs-on: ubuntu-latest
+    needs: [meta, build]
+    if: needs.meta.outputs.type=='release'
+    outputs:
+      upload_url: ${{ steps.createRelease.outputs.upload_url }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          token: ${{ secrets.REPO_SCOPED_TOKEN }}
+
+      - uses: actions/create-release@master
+        id: createRelease
+        name: Create ${{ needs.meta.outputs.version }} Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          tag_name: "v${{ needs.meta.outputs.version }}"
+          release_name: "v${{ needs.meta.outputs.version }}"
+          body: |
+            ${{ needs.meta.outputs.notes }}
+          prerelease: false
+  
+  release-assets:
+    name: Upload Asset ${{ matrix.ue_version }} ${{ matrix.host_platform}}
+    runs-on: windows-10
+    needs: [meta, release]
+    if: needs.meta.outputs.type=='release'
+    strategy:
+      matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          token: ${{ secrets.REPO_SCOPED_TOKEN }}
+
+      - name: Inject Env into GHA
+        id: inject
+        run: echo "production" > .env && make env-inject ue=${{ matrix.ue_version }} platform=${{ matrix.host_platform }} version=${{ needs.meta.outputs.version }}
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-central-1
+
+      - name: Download Release Asset From S3
+        run: aws s3 cp ${{ steps.inject.outputs.PATH_DEPLOY_PRECISE }} ./${{ steps.inject.outputs.SIG_PRECISE }}.zip
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: "${{ needs.release.outputs.upload_url }}"
+          asset_path: ./${{ steps.inject.outputs.SIG_PRECISE }}.zip
+          asset_name: ${{ steps.inject.outputs.SIG_VERSION }}.zip
+          asset_content_type: application/octet-stream
+
+  release-pr:
+    name: PR Release Into ${{ matrix.destination_branch }}
+    runs-on: ubuntu-latest
+    needs: [meta, release]
+    if: needs.meta.outputs.type=='release'
+    strategy:
+      fail-fast: false
+      matrix:
+        destination_branch:
+          - develop
+          - master
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          token: ${{ secrets.REPO_SCOPED_TOKEN }}
+
+      - name: pull-request
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: ${{ github.ref }}
+          destination_branch: ${{ matrix.destination_branch }}
+          pr_title: 'Merge release ${{ needs.meta.outputs.version }} into ${{ matrix.destination_branch }}'
+          pr_body: | 
+            ${{ needs.meta.outputs.notes }}
+          pr_reviewer: ${{ env.REVIEWERS }}
+          pr_assignee:  ${{ env.ASSIGNEES }}
+          pr_label: 'automated,release'
+          pr_draft: false
+          pr_allow_empty: true
+          github_token: ${{ github.token }}
+  
+  release-docs:
+    name: Generate Doxygen Documentation
+    runs-on: ubuntu-latest
+    needs: [release]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          token: ${{ secrets.REPO_SCOPED_TOKEN }}
+
+      - uses: mattnotmitt/doxygen-action@v1
+        with:
+          working-directory: 'src/'
+          doxyfile-path: '../Doxyfile'
+
+      - name: Deploy to GHP
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.REPO_SCOPED_TOKEN }}
+          publish_dir: ./html
