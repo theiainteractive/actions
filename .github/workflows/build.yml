@@ -112,6 +112,7 @@ jobs:
           token: ${{ secrets.token }}
       
       - name: Make Dotenv & Echo Env
+        id: inject
         run: |
           [[ "${{ needs.meta.outputs.type }}" == "release" ]] && echo "production" > .env || echo "dev_remote" > .env
           make env-inject ue=${{ matrix.ue_version }} platform=${{ matrix.host_platform }} version=${{ needs.meta.outputs.version }}
