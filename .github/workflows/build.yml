@@ -115,6 +115,7 @@ jobs:
           token: ${{ secrets.token }}
       
       - name: Dotenv
+        id: inject
         run: |
           [[ "${{ needs.meta.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="dev_remote"
           make dev ue=${{ matrix.ue_version }} platform=${{ matrix.host_platform }} version=${{ needs.meta.outputs.version }} environment=$ENVIRONMENT 
@@ -123,6 +124,12 @@ jobs:
         run: |
           [[ "${{ needs.meta.outputs.type }}" == "release" ]] && TARGET=package || TARGET=build
           make $TARGET
+          
+      - name: Upload Build Artifact to Github
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ steps.inject.outputs.SIG_PRECISE }}.zip
+          path: ./${{ steps.inject.outputs.PATH_ARTIFACT }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
