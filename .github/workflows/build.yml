@@ -97,7 +97,7 @@ jobs:
       - name: Dotenv
         run: |
           [[ "${{ needs.meta.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="dev_remote"
-          make dev ue=${{ matrix.ue_version }} platform=${{ matrix.host_platform }} version=${{ needs.meta.outputs.version }} environment=$ENVIRONMENT 
+          make dev ue="${{ matrix.ue_version }}" platform="${{ matrix.host_platform }}" version="${{ needs.meta.outputs.version }}" environment="$ENVIRONMENT"
 
       - name: Run Tests
         run: make test
@@ -118,7 +118,8 @@ jobs:
         id: inject
         run: |
           [[ "${{ needs.meta.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="dev_remote"
-          make dev ue=${{ matrix.ue_version }} platform=${{ matrix.host_platform }} version=${{ needs.meta.outputs.version }} environment=$ENVIRONMENT 
+          make dev ue="${{ matrix.ue_version }}" platform="${{ matrix.host_platform }}" version="${{ needs.meta.outputs.version }}" environment="$ENVIRONMENT"
+          make env-inject
 
       - name: Make Target Package/Build
         run: |
@@ -186,7 +187,7 @@ jobs:
       - name: Inject Env into GHA
         id: inject
         run: |
-          make dev ue=${{ matrix.ue_version }} platform=${{ matrix.host_platform }} version=${{ needs.meta.outputs.version }} environment=production
+          make dev ue="${{ matrix.ue_version }}" platform="${{ matrix.host_platform }}" version="${{ needs.meta.outputs.version }}" environment=production
           make env-inject
 
       - name: Configure AWS credentials
