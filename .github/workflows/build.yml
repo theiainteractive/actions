@@ -122,10 +122,8 @@ jobs:
           make env-inject
 
       - name: Make Target Package/Build
-        run: |
-          [[ "${{ needs.meta.outputs.type }}" == "release" ]] && TARGET=package || TARGET=build
-          make $TARGET
-          
+        run: if [[ "${{ needs.meta.outputs.type }}" == "release" ]]; then make package; else make build; fi
+
       - name: Upload Build Artifact to Github
         uses: actions/upload-artifact@v2
         with:
