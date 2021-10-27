@@ -76,10 +76,19 @@ jobs:
       - name: Setup Job Matrixes
         id: generateMatrix
         run: |
-          [[ "${{ steps.releaseCheck.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="dev_remote"
-          UE_VERSIONS=[\"$(yq -r .envs.\"$ENVIRONMENT\".ue_versions config.yml | sed 's/ /\",\"/g')\"]
-          HOST_PLATFORMS=[\"$(yq -r .envs.\"$ENVIRONMENT\".host_platforms config.yml | sed 's/ /\",\"/g')\"]
-          MATRIX="{\"ue_version\":$UE_VERSIONS,\"host_platform\":$HOST_PLATFORMS}"
+          [[ "${{ steps.releaseCheck.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="development"
+          while read ue_version platform experimental; do
+            ue_version=$(echo $ue_version | xargs)
+            platform=$(echo $platform | xargs)
+            experimental=$(echo $experimental | xargs)
+            NEW_ENTRY="{\"ue_version\":$ue_version,\"host_platform\":$platform,\"experimental\":$experimental}"
+            echo "$NEW_ENTRY"
+            [[ -z $ENTRIES ]] && ENTRIES="[$NEW_ENTRY" || ENTRIES="$ENTRIES,$NEW_ENTRY"
+          done <<< $(yq -r '.envs.$ENVIRONMENT.matrix[] | [.ue_version, .platform, .experimental] | @tsv' config.yml)
+          ENTRIES="$ENTRIES]"
+          MATRIX="{\"include\":$ENTRIES}"
+          echo "Current matrix:"
+          echo "$MATRIX"
           echo "::set-output name=matrix::$MATRIX"
 
   test:
@@ -96,8 +105,8 @@ jobs:
 
       - name: Dotenv
         run: |
-          [[ "${{ needs.meta.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="dev_remote"
-          make dev ue="${{ matrix.ue_version }}" platform="${{ matrix.host_platform }}" version="${{ needs.meta.outputs.version }}" environment="$ENVIRONMENT"
+          [[ "${{ needs.meta.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="development"
+          make dev ue="${{ matrix.ue_version }}" version="${{ needs.meta.outputs.version }}" env="$ENVIRONMENT"
 
       - name: Run Tests
         if: matrix.ue_version!='5.0EA'
@@ -118,8 +127,8 @@ jobs:
       - name: Dotenv
         id: inject
         run: |
-          [[ "${{ needs.meta.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="dev_remote"
-          make dev ue="${{ matrix.ue_version }}" platform="${{ matrix.host_platform }}" version="${{ needs.meta.outputs.version }}" environment="$ENVIRONMENT"
+          [[ "${{ needs.meta.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="development"
+          make dev ue="${{ matrix.ue_version }}" version="${{ needs.meta.outputs.version }}" env="$ENVIRONMENT"
           make env-inject
 
       - name: Make Target Package/Build
@@ -186,7 +195,7 @@ jobs:
       - name: Inject Env into GHA
         id: inject
         run: |
-          make dev ue="${{ matrix.ue_version }}" platform="${{ matrix.host_platform }}" version="${{ needs.meta.outputs.version }}" environment=production
+          make dev ue="${{ matrix.ue_version }}" version="${{ needs.meta.outputs.version }}" env=production
           make env-inject
 
       - name: Configure AWS credentials
