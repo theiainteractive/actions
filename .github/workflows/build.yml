@@ -28,6 +28,7 @@ jobs:
       - uses: actions/checkout@v2
         with:
           lfs: true
+          token: ${{ secrets.token }}
           fetch-depth: 0 # Needed for semantic versioning below
 
       - name: Check Release
@@ -102,6 +103,8 @@ jobs:
       - uses: actions/checkout@v2
         with:
           lfs: true
+          token: ${{ secrets.token }}
+          submodules: true
 
       - name: Dotenv
         run: |
@@ -123,7 +126,11 @@ jobs:
         with:
           lfs: true
           token: ${{ secrets.token }}
-      
+          submodules: true
+
+      - name: Ensure LFS Assets Dereferenced
+        run: git lfs pull
+
       - name: Dotenv
         id: inject
         run: |
@@ -232,7 +239,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          submodules: true
           token: ${{ secrets.token }}
 
       - name: pull-request
