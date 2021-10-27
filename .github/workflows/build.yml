@@ -95,7 +95,7 @@ jobs:
     runs-on: ${{ matrix.host_platform }}
     needs: [meta]
     continue-on-error: ${{ matrix.experimental }}
-    if: matrix.test=='true'
+    if: ${{ matrix.test }}
     strategy:
       matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
     steps:
