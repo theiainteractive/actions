@@ -82,13 +82,9 @@ jobs:
             ue_version=$(echo $ue_version | xargs)
             platform=$(echo $platform | xargs)
             experimental=$(echo $experimental | xargs)
-            NEW_ENTRY="{\"ue_version\": $ue_version, \"host_platform\": $platform, \"experimental\": $experimental},"
-            ENTRIES="$ENTRIES$NEW_ENTRY"
+            ENTRIES="$ENTRIES{\"ue_version\": \"$ue_version\", \"host_platform\": \"$platform\", \"experimental\": \"$experimental\"},"
           done <<< $(yq -r ".envs.$ENVIRONMENT.matrix[] | [.ue_version, .platform, .experimental] | @tsv" config.yml)
-          MATRIX="{\"include\":[$ENTRIES]}"
-          echo "Current matrix:"
-          echo "$MATRIX"
-          echo "::set-output name=matrix::$MATRIX"
+          echo ::set-output name=matrix::{\"include\":[$ENTRIES]}
 
   test:
     name: Tests for UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}

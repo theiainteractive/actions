@@ -20,6 +20,7 @@ jobs:
           MATRIX_PARAMS_COMBINATIONS="$MATRIX_PARAMS_COMBINATIONS{\"foo\": \"$a-1\", \"bar\": \"bar-1\"},"
           MATRIX_PARAMS_COMBINATIONS="$MATRIX_PARAMS_COMBINATIONS{\"foo\": \"$a-1\", \"bar\": \"bar-1\"},"
           echo ::set-output name=matrix-combinations::{\"include\":[$MATRIX_PARAMS_COMBINATIONS]}
+          echo "{\"include\":[$MATRIX_PARAMS_COMBINATIONS]}"
     outputs:
       matrix-combinations: ${{ steps.setup-matrix-combinations.outputs.matrix-combinations }}
   matrix-job:
