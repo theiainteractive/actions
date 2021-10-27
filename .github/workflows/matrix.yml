@@ -14,7 +14,11 @@ jobs:
         id: setup-matrix-combinations
         run: |
           a="foo"
-          MATRIX_PARAMS_COMBINATIONS="{\"foo\": \"$a-1\", \"bar\": \"bar-1\"},{\"foo\": \"$a-1\", \"bar\": \"bar-2\"},{\"foo\": \"$a-2\", \"bar\": \"bar-1\"},"
+          MATRIX_PARAMS_COMBINATIONS=""
+          MATRIX_PARAMS_COMBINATIONS=$MATRIX_PARAMS_COMBINATIONS{\"foo\": \"$a-1\", \"bar\": \"bar-1\"},
+          MATRIX_PARAMS_COMBINATIONS=$MATRIX_PARAMS_COMBINATIONS{\"foo\": \"$a-1\", \"bar\": \"bar-1\"},
+          MATRIX_PARAMS_COMBINATIONS=$MATRIX_PARAMS_COMBINATIONS{\"foo\": \"$a-1\", \"bar\": \"bar-1\"},
+          MATRIX_PARAMS_COMBINATIONS=$MATRIX_PARAMS_COMBINATIONS{\"foo\": \"$a-1\", \"bar\": \"bar-1\"},
           echo ::set-output name=matrix-combinations::{\"include\":[$MATRIX_PARAMS_COMBINATIONS]}
     outputs:
       matrix-combinations: ${{ steps.setup-matrix-combinations.outputs.matrix-combinations }}
