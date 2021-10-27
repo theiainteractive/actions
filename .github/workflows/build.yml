@@ -85,7 +85,7 @@ jobs:
             NEW_ENTRY="{\"ue_version\":$ue_version,\"host_platform\":$platform,\"experimental\":$experimental}"
             echo "$NEW_ENTRY"
             [[ -z $ENTRIES ]] && ENTRIES="[$NEW_ENTRY" || ENTRIES="$ENTRIES,$NEW_ENTRY"
-          done <<< $(yq -r '.envs.$ENVIRONMENT.matrix[] | [.ue_version, .platform, .experimental] | @tsv' config.yml)
+          done <<< $(yq -r ".envs.$ENVIRONMENT.matrix[] | [.ue_version, .platform, .experimental] | @tsv" config.yml)
           ENTRIES="$ENTRIES]"
           MATRIX="{\"include\":$ENTRIES}"
           echo "Current matrix:"
