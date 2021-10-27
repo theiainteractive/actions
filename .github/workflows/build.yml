@@ -95,26 +95,28 @@ jobs:
     runs-on: ${{ matrix.host_platform }}
     needs: [meta]
     continue-on-error: ${{ matrix.experimental }}
-    if: ${{ matrix.test }}
     strategy:
       matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v2
+        if: ${{ matrix.test }}=='true'
         with:
           lfs: true
           token: ${{ secrets.token }}
           submodules: true
 
       - name: Ensure LFS Assets Dereferenced
+        if: ${{ matrix.test }}=='true'
         run: git lfs pull
 
       - name: Dotenv
+        if: ${{ matrix.test }}=='true'
         run: |
           [[ "${{ needs.meta.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="development"
           make dev ue="${{ matrix.ue_version }}" version="${{ needs.meta.outputs.version }}" env="$ENVIRONMENT"
 
       - name: Run Tests
-        if: matrix.ue_version!='5.0EA'
+        if: matrix.ue_version!='5.0EA' && ${{ matrix.text }}=='true'
         run: make test
 
   build:
