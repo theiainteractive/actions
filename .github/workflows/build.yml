@@ -82,12 +82,10 @@ jobs:
             ue_version=$(echo $ue_version | xargs)
             platform=$(echo $platform | xargs)
             experimental=$(echo $experimental | xargs)
-            NEW_ENTRY="{\"ue_version\":$ue_version,\"host_platform\":$platform,\"experimental\":$experimental}"
-            echo "$NEW_ENTRY"
-            [[ -z $ENTRIES ]] && ENTRIES="[$NEW_ENTRY" || ENTRIES="$ENTRIES,$NEW_ENTRY"
+            NEW_ENTRY="{\"ue_version\": $ue_version, \"host_platform\": $platform, \"experimental\": $experimental},"
+            ENTRIES="$ENTRIES$NEW_ENTRY"
           done <<< $(yq -r ".envs.$ENVIRONMENT.matrix[] | [.ue_version, .platform, .experimental] | @tsv" config.yml)
-          ENTRIES="$ENTRIES]"
-          MATRIX="{\"include\":$ENTRIES}"
+          MATRIX="{\"include\":[$ENTRIES]}"
           echo "Current matrix:"
           echo "$MATRIX"
           echo "::set-output name=matrix::$MATRIX"
@@ -96,7 +94,8 @@ jobs:
     name: Tests for UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
     runs-on: ${{ matrix.host_platform }}
     needs: [meta]
-    continue-on-error: true
+    continue-on-error: ${{ matrix.experimental }}
+    if: matrix.test=='true'
     strategy:
       matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
     steps:
@@ -105,6 +104,9 @@ jobs:
           lfs: true
           token: ${{ secrets.token }}
           submodules: true
+
+      - name: Ensure LFS Assets Dereferenced
+        run: git lfs pull
 
       - name: Dotenv
         run: |
@@ -119,6 +121,7 @@ jobs:
     name: Build for UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
     runs-on: ${{ matrix.host_platform }}
     needs: [meta, test]
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
     steps:
