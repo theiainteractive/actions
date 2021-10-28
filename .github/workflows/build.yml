@@ -118,7 +118,7 @@ jobs:
 
   build:
     # name: Build for UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
-    # runs-on: ${{ matrix.host_platform }}
+    runs-on: windows-10
     needs: meta
     # continue-on-error: ${{ matrix.experimental }}
     strategy:
