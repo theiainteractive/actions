@@ -91,7 +91,7 @@ jobs:
   #   name: Tests for UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
   #   runs-on: ${{ matrix.host_platform }}
   #   needs: [meta]
-  #   continue-on-error: ${{ matrix.experimental }}
+  #   continue-on-error: ${{ matrix.experimental == 'true' }}
   #   strategy:
   #     matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
   #   steps:
@@ -120,7 +120,7 @@ jobs:
     name: Build for UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
     runs-on: ${{ matrix.host_platform }}
     needs: meta
-    # continue-on-error: ${{ matrix.experimental }}
+    continue-on-error: ${{ matrix.experimental == 'true' }}
     strategy:
       matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
     steps:
