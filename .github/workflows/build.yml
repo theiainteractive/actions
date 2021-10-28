@@ -126,52 +126,52 @@ jobs:
   #       if: matrix.ue_version!='5.0EA' && ${{ matrix.text }}=='true'
   #       run: make test
 
-  # build:
-  #   name: Build for UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
-  #   runs-on: ${{ matrix.host_platform }}
-  #   needs: [meta, test]
-  #   continue-on-error: ${{ matrix.experimental }}
-  #   strategy:
-  #     matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         lfs: true
-  #         token: ${{ secrets.token }}
-  #         submodules: true
+  build:
+    name: Build for UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
+    runs-on: ${{ matrix.host_platform }}
+    needs: [meta, test]
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          lfs: true
+          token: ${{ secrets.token }}
+          submodules: true
 
-  #     - name: Ensure LFS Assets Dereferenced
-  #       run: git lfs pull
+      - name: Ensure LFS Assets Dereferenced
+        run: git lfs pull
 
-  #     - name: Dotenv
-  #       id: inject
-  #       run: |
-  #         [[ "${{ needs.meta.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="development"
-  #         make dev ue="${{ matrix.ue_version }}" version="${{ needs.meta.outputs.version }}" env="$ENVIRONMENT"
-  #         make env-inject
+      - name: Dotenv
+        id: inject
+        run: |
+          [[ "${{ needs.meta.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="development"
+          make dev ue="${{ matrix.ue_version }}" version="${{ needs.meta.outputs.version }}" env="$ENVIRONMENT"
+          make env-inject
 
-  #     - name: Make Target Package/Build
-  #       run: if [[ "${{ needs.meta.outputs.type }}" == "release" ]]; then make package; else make build; fi
+      - name: Make Target Package/Build
+        run: if [[ "${{ needs.meta.outputs.type }}" == "release" ]]; then make package; else make build; fi
 
-  #     - name: Upload Build Artifact to Github
-  #       uses: actions/upload-artifact@v2
-  #       with:
-  #         name: ${{ steps.inject.outputs.SIG_PRECISE }}.zip
-  #         path: ./${{ steps.inject.outputs.PATH_ARTIFACT }}
+      - name: Upload Build Artifact to Github
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ steps.inject.outputs.SIG_PRECISE }}.zip
+          path: ./${{ steps.inject.outputs.PATH_ARTIFACT }}
 
-  #     - name: Configure AWS credentials
-  #       uses: aws-actions/configure-aws-credentials@v1
-  #       with:
-  #         aws-access-key-id: ${{ secrets.aws_access_key_id }}
-  #         aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
-  #         aws-region: eu-central-1
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.aws_access_key_id }}
+          aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
+          aws-region: eu-central-1
 
-  #     - name: Deploy Artifact
-  #       run: make deploy
+      - name: Deploy Artifact
+        run: make deploy
 
-  #     - name: Cleanup
-  #       if: always()
-  #       run: make clean
+      - name: Cleanup
+        if: always()
+        run: make clean
 
   # release:
   #   name: Deploy Release
