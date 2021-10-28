@@ -147,7 +147,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.inject.outputs.SIG_PRECISE }}.zip
-          path: ./${{ steps.inject.outputs.PATH_ARTIFACT }}
+          path: ${{ steps.inject.outputs.PATH_ARTIFACT }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -163,118 +163,118 @@ jobs:
         if: always()
         run: make clean
 
-  # release:
-  #   name: Deploy Release
-  #   runs-on: ubuntu-latest
-  #   needs: [meta, build]
-  #   if: needs.meta.outputs.type=='release'
-  #   outputs:
-  #     upload_url: ${{ steps.createRelease.outputs.upload_url }}
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         submodules: true
-  #         token: ${{ secrets.token }}
+  release:
+    name: Deploy Release
+    runs-on: ubuntu-latest
+    needs: [meta, build]
+    if: needs.meta.outputs.type=='release'
+    outputs:
+      upload_url: ${{ steps.createRelease.outputs.upload_url }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          token: ${{ secrets.token }}
 
-  #     - uses: actions/create-release@master
-  #       id: createRelease
-  #       name: Create ${{ needs.meta.outputs.version }} Release
-  #       env:
-  #         GITHUB_TOKEN: ${{ github.token }}
-  #       with:
-  #         tag_name: "v${{ needs.meta.outputs.version }}"
-  #         release_name: "v${{ needs.meta.outputs.version }}"
-  #         body: |
-  #           ${{ needs.meta.outputs.notes }}
-  #         prerelease: false
+      - uses: actions/create-release@master
+        id: createRelease
+        name: Create ${{ needs.meta.outputs.version }} Release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          tag_name: "v${{ needs.meta.outputs.version }}"
+          release_name: "v${{ needs.meta.outputs.version }}"
+          body: |
+            ${{ needs.meta.outputs.notes }}
+          prerelease: false
   
-  # release-assets:
-  #   name: Upload Asset ${{ matrix.ue_version }} ${{ matrix.host_platform}}
-  #   runs-on: windows-10
-  #   needs: [meta, release]
-  #   if: needs.meta.outputs.type=='release'
-  #   strategy:
-  #     matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         submodules: true
-  #         token: ${{ secrets.token }}
+  release-assets:
+    name: Upload Asset ${{ matrix.ue_version }} ${{ matrix.host_platform}}
+    runs-on: windows-10
+    needs: [meta, release]
+    if: needs.meta.outputs.type=='release'
+    strategy:
+      matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          token: ${{ secrets.token }}
 
-  #     - name: Inject Env into GHA
-  #       id: inject
-  #       run: |
-  #         make dev ue="${{ matrix.ue_version }}" version="${{ needs.meta.outputs.version }}" env=production
-  #         make env-inject
+      - name: Inject Env into GHA
+        id: inject
+        run: |
+          make dev ue="${{ matrix.ue_version }}" version="${{ needs.meta.outputs.version }}" env=production
+          make env-inject
 
-  #     - name: Configure AWS credentials
-  #       uses: aws-actions/configure-aws-credentials@v1
-  #       with:
-  #         aws-access-key-id: ${{ secrets.aws_access_key_id }}
-  #         aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
-  #         aws-region: eu-central-1
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.aws_access_key_id }}
+          aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
+          aws-region: eu-central-1
 
-  #     - name: Download Release Asset From S3
-  #       run: aws s3 cp ${{ steps.inject.outputs.PATH_DEPLOY_PRECISE }} ./${{ steps.inject.outputs.SIG_PRECISE }}.zip
+      - name: Download Release Asset From S3
+        run: aws s3 cp ${{ steps.inject.outputs.PATH_DEPLOY_PRECISE }} ./${{ steps.inject.outputs.SIG_PRECISE }}.zip
 
-  #     - name: Upload Release Asset
-  #       uses: actions/upload-release-asset@v1.0.1
-  #       env:
-  #         GITHUB_TOKEN: ${{ github.token }}
-  #       with:
-  #         upload_url: "${{ needs.release.outputs.upload_url }}"
-  #         asset_path: ./${{ steps.inject.outputs.SIG_PRECISE }}.zip
-  #         asset_name: ${{ steps.inject.outputs.SIG_VERSION }}.zip
-  #         asset_content_type: application/octet-stream
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: "${{ needs.release.outputs.upload_url }}"
+          asset_path: ./${{ steps.inject.outputs.SIG_PRECISE }}.zip
+          asset_name: ${{ steps.inject.outputs.SIG_VERSION }}.zip
+          asset_content_type: application/octet-stream
 
-  # release-pr:
-  #   name: PR Release Into ${{ matrix.destination_branch }}
-  #   runs-on: ubuntu-latest
-  #   needs: [meta, release]
-  #   if: needs.meta.outputs.type=='release'
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       destination_branch:
-  #         - develop
-  #         - master
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         token: ${{ secrets.token }}
+  release-pr:
+    name: PR Release Into ${{ matrix.destination_branch }}
+    runs-on: ubuntu-latest
+    needs: [meta, release]
+    if: needs.meta.outputs.type=='release'
+    strategy:
+      fail-fast: false
+      matrix:
+        destination_branch:
+          - develop
+          - master
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.token }}
 
-  #     - name: pull-request
-  #       uses: repo-sync/pull-request@v2
-  #       with:
-  #         source_branch: ${{ github.ref }}
-  #         destination_branch: ${{ matrix.destination_branch }}
-  #         pr_title: 'Merge release ${{ needs.meta.outputs.version }} into ${{ matrix.destination_branch }}'
-  #         pr_body: | 
-  #           ${{ needs.meta.outputs.notes }}
-  #         pr_reviewer: ${{ env.REVIEWERS }}
-  #         pr_assignee:  ${{ env.ASSIGNEES }}
-  #         pr_label: 'automated,release'
-  #         pr_draft: false
-  #         pr_allow_empty: true
-  #         github_token: ${{ github.token }}
+      - name: pull-request
+        uses: repo-sync/pull-request@v2
+        with:
+          source_branch: ${{ github.ref }}
+          destination_branch: ${{ matrix.destination_branch }}
+          pr_title: 'Merge release ${{ needs.meta.outputs.version }} into ${{ matrix.destination_branch }}'
+          pr_body: | 
+            ${{ needs.meta.outputs.notes }}
+          pr_reviewer: ${{ env.REVIEWERS }}
+          pr_assignee:  ${{ env.ASSIGNEES }}
+          pr_label: 'automated,release'
+          pr_draft: false
+          pr_allow_empty: true
+          github_token: ${{ github.token }}
   
-  # release-docs:
-  #   name: Generate Doxygen Documentation
-  #   runs-on: ubuntu-latest
-  #   needs: [release]
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         submodules: true
-  #         token: ${{ secrets.token }}
+  release-docs:
+    name: Generate Doxygen Documentation
+    runs-on: ubuntu-latest
+    needs: [release]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          token: ${{ secrets.token }}
 
-  #     - uses: mattnotmitt/doxygen-action@v1
-  #       with:
-  #         working-directory: 'src/'
-  #         doxyfile-path: '../Doxyfile'
+      - uses: mattnotmitt/doxygen-action@v1
+        with:
+          working-directory: 'src/'
+          doxyfile-path: '../Doxyfile'
 
-  #     - name: Deploy to GHP
-  #       uses: peaceiris/actions-gh-pages@v3
-  #       with:
-  #         github_token: ${{ secrets.token }}
-  #         publish_dir: ./html
+      - name: Deploy to GHP
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.token }}
+          publish_dir: ./html
