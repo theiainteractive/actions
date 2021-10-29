@@ -78,12 +78,13 @@ jobs:
         id: generateMatrix
         run: |
           [[ "${{ steps.releaseCheck.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="development"
-          while read ue_version platform experimental; do
+          while read ue_version platform experimental test; do
             ue_version=$(echo $ue_version | xargs)
             platform=$(echo $platform | xargs)
             experimental=$(echo $experimental | xargs)
-            ENTRIES="$ENTRIES{\"ue_version\": \"$ue_version\", \"host_platform\": \"$platform\", \"experimental\": \"$experimental\"},"
-          done <<< $(yq -r ".envs.$ENVIRONMENT.matrix[] | [.ue_version, .platform, .experimental] | @tsv" config.yml)
+            test=$(echo $test | xargs) 
+            ENTRIES="$ENTRIES{\"ue_version\": \"$ue_version\", \"host_platform\": \"$platform\", \"experimental\": \"$experimental\", \"test\": \"$test\"},"
+          done <<< $(yq -r ".envs.$ENVIRONMENT.matrix[] | [.ue_version, .platform, .experimental, .test] | @tsv" config.yml)
           echo ::set-output name=matrix::{\"include\":[$ENTRIES]}
           echo "{\"include\":[$ENTRIES]}"
 
