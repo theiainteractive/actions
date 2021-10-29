@@ -154,8 +154,8 @@ jobs:
         run: make deploy
 
       - run: |
-        echo ${{ steps.inject.outputs.PATH_ARTIFACT }}
-        ls ${{ steps.inject.outputs.PATH_ARTIFACT }}
+          echo ${{ steps.inject.outputs.PATH_ARTIFACT }}
+          ls ${{ steps.inject.outputs.PATH_ARTIFACT }}
 
       - name: Upload Build Artifact to Github
         uses: actions/upload-artifact@v2
