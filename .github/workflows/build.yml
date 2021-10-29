@@ -96,7 +96,6 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
     steps:
-      - run: echo ${{ matrix.test }}
       - uses: actions/checkout@v2
         if: matrix.test=='true'
         with:
@@ -163,7 +162,7 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: ${{ steps.inject.outputs.SIG_PRECISE }}.zip
-          path: ${{ steps.inject.outputs.PATH_ARTIFACT }}/${{ steps.inject.outputs.SIG_PRECISE }}.zip
+          path: ./${{ steps.inject.outputs.PATH_ARTIFACT }}/${{ steps.inject.outputs.SIG_PRECISE }}.zip
 
       - name: Cleanup
         if: always()
