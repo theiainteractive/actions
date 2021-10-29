@@ -87,39 +87,39 @@ jobs:
           echo ::set-output name=matrix::{\"include\":[$ENTRIES]}
           echo "{\"include\":[$ENTRIES]}"
 
-  # test:
-  #   name: Tests for UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
-  #   runs-on: ${{ matrix.host_platform }}
-  #   needs: [meta]
-  #   continue-on-error: ${{ matrix.experimental == 'true' }}
-  #   strategy:
-  #     matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       if: ${{ matrix.test }}=='true'
-  #       with:
-  #         lfs: true
-  #         token: ${{ secrets.token }}
-  #         submodules: true
+  test:
+    name: Tests for UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
+    runs-on: ${{ matrix.host_platform }}
+    needs: [meta]
+    continue-on-error: ${{ matrix.experimental == 'true' }}
+    strategy:
+      matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v2
+        if: ${{ matrix.test }}=='true'
+        with:
+          lfs: true
+          token: ${{ secrets.token }}
+          submodules: true
 
-  #     - name: Ensure LFS Assets Dereferenced
-  #       if: ${{ matrix.test }}=='true'
-  #       run: git lfs pull
+      - name: Ensure LFS Assets Dereferenced
+        if: ${{ matrix.test }}=='true'
+        run: git lfs pull
 
-  #     - name: Dotenv
-  #       if: ${{ matrix.test }}=='true'
-  #       run: |
-  #         [[ "${{ needs.meta.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="development"
-  #         make dev ue="${{ matrix.ue_version }}" version="${{ needs.meta.outputs.version }}" env="$ENVIRONMENT"
+      - name: Dotenv
+        if: ${{ matrix.test }}=='true'
+        run: |
+          [[ "${{ needs.meta.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="development"
+          make dev ue="${{ matrix.ue_version }}" version="${{ needs.meta.outputs.version }}" env="$ENVIRONMENT"
 
-  #     - name: Run Tests
-  #       if: matrix.ue_version!='5.0EA' && ${{ matrix.text }}=='true'
-  #       run: make test
+      - name: Run Tests
+        if: matrix.ue_version!='5.0EA' && ${{ matrix.text }}=='true'
+        run: make test
 
   build:
     name: Build for UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
     runs-on: ${{ matrix.host_platform }}
-    needs: meta
+    needs: [meta, test]
     continue-on-error: ${{ matrix.experimental == 'true' }}
     strategy:
       matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
