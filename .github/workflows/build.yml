@@ -161,9 +161,9 @@ jobs:
           name: ${{ steps.inject.outputs.SIG_PRECISE }}.zip
           path: ./${{ steps.inject.outputs.PATH_ARTIFACT_RELATIVE }}/${{ steps.inject.outputs.SIG_PRECISE }}.zip
 
-      - name: Cleanup
-        if: always()
-        run: make clean
+      # - name: Cleanup
+      #   if: always()
+      #   run: make clean
 
   release:
     name: Deploy Release
