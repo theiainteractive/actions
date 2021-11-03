@@ -78,18 +78,19 @@ jobs:
         id: generateMatrix
         run: |
           [[ "${{ steps.releaseCheck.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="development"
-          while read ue_version platform experimental test; do
+          while read ue_version target_platform host_platform experimental test; do
             ue_version=$(echo $ue_version | xargs)
-            platform=$(echo $platform | xargs)
+            host_platform=$(echo $host_platform | xargs)
+            target_platform=$(echo $target_platform | xargs)
             experimental=$(echo $experimental | xargs)
-            test=$(echo $test | xargs) 
-            ENTRIES="$ENTRIES{\"ue_version\": \"$ue_version\", \"host_platform\": \"$platform\", \"experimental\": \"$experimental\", \"test\": \"$test\"},"
-          done <<< $(yq -r ".envs.$ENVIRONMENT.matrix[] | [.ue_version, .platform, .experimental, .test] | @tsv" config.yml)
+            test=$(echo $test | xargs)
+            ENTRIES="$ENTRIES{\"ue_version\": \"$ue_version\", \"host_platform\": \"$host_platform\", \"target_platform\": \"$target_platform\", \"experimental\": \"$experimental\", \"test\": \"$test\"},"
+          done <<< $(yq -r ".envs.$ENVIRONMENT.matrix[] | [.ue_version, .target_platform, .host_platform, .experimental, .test] | @tsv" config.yml)
           echo ::set-output name=matrix::{\"include\":[$ENTRIES]}
           echo "{\"include\":[$ENTRIES]}"
 
   test:
-    name: Tests for UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
+    name: Tests for ${{ matrix.target_platform }} UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
     runs-on: ${{ matrix.host_platform }}
     needs: [meta]
     continue-on-error: ${{ matrix.experimental == 'true' }}
@@ -111,14 +112,14 @@ jobs:
         if: matrix.test=='true'
         run: |
           [[ "${{ needs.meta.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="development"
-          make dev ue="${{ matrix.ue_version }}" version="${{ needs.meta.outputs.version }}" env="$ENVIRONMENT"
+          make dev ue="${{ matrix.ue_version }}" version="${{ needs.meta.outputs.version }}" env="$ENVIRONMENT" target_platform="${{ matrix.target_platform }}"
 
       - name: Run Tests
         if: matrix.test=='true'
         run: make test
 
   build:
-    name: Build for UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
+    name: Build for ${{ matrix.target_platform }} UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
     runs-on: ${{ matrix.host_platform }}
     needs: [meta, test]
     continue-on-error: ${{ matrix.experimental == 'true' }}
@@ -138,7 +139,7 @@ jobs:
         id: inject
         run: |
           [[ "${{ needs.meta.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="development"
-          make dev ue="${{ matrix.ue_version }}" version="${{ needs.meta.outputs.version }}" env="$ENVIRONMENT"
+          make dev ue="${{ matrix.ue_version }}" version="${{ needs.meta.outputs.version }}" env="$ENVIRONMENT" target_platform="${{ matrix.target_platform }}"
           make env-inject
 
       - name: Make Target Package/Build
