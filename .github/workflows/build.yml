@@ -92,7 +92,7 @@ jobs:
   build:
     name: Build for ${{ matrix.target_platform }} UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
     runs-on: ${{ matrix.host_platform }}
-    needs: [meta, test]
+    needs: [meta]
     continue-on-error: ${{ matrix.experimental == 'true' }}
     strategy:
       matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
