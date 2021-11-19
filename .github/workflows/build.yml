@@ -170,6 +170,7 @@ jobs:
     runs-on: windows-10
     needs: [meta, release]
     if: needs.meta.outputs.type=='release'
+    continue-on-error: ${{ matrix.experimental == 'true' }}
     strategy:
       matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
     steps:
