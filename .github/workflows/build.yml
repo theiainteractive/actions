@@ -182,7 +182,7 @@ jobs:
       - name: Inject Env into GHA
         id: inject
         run: |
-          make dev ue="${{ matrix.ue_version }}" version="${{ needs.meta.outputs.version }}" env=production
+          make dev ue="${{ matrix.ue_version }}" version="${{ needs.meta.outputs.version }}" env=production target_platform="${{ matrix.target_platform }}"
           make env-inject
 
       - name: Configure AWS credentials
