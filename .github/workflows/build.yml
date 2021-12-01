@@ -235,23 +235,4 @@ jobs:
           pr_allow_empty: true
           github_token: ${{ github.token }}
   
-  # release-docs:
-  #   name: Generate Doxygen Documentation
-  #   runs-on: ubuntu-latest
-  #   needs: [release]
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         submodules: true
-  #         token: ${{ secrets.token }}
 
-  #     - uses: mattnotmitt/doxygen-action@v1
-  #       with:
-  #         working-directory: 'src/'
-  #         doxyfile-path: '../Doxyfile'
-
-  #     - name: Deploy to GHP
-  #       uses: peaceiris/actions-gh-pages@v3
-  #       with:
-  #         github_token: ${{ secrets.token }}
-  #         publish_dir: ./html

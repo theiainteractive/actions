@@ -1,0 +1,27 @@
+name: Docs Build & Deploy (CD)
+
+on:
+  workflow_call:
+    secrets:
+      token:
+        required: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  docs:
+    name: Generate Doxygen Documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          token: ${{ secrets.token }}
+      - uses: mattnotmitt/doxygen-action@v1
+      - name: Deploy to GHP
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.token }}
+          publish_dir: ./html
