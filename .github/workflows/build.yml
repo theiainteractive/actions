@@ -9,7 +9,6 @@ on:
         required: true
       aws_secret_access_key:
         required: true
-      
 
 defaults:
   run:
