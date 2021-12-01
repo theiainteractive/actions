@@ -60,8 +60,8 @@ jobs:
         if: steps.releaseCheck.outputs.type=='release'
         id: releaseNotes
         run: |
-          sed -i 's/<version>/${{ steps.releaseVersion.outputs.version }}/g' RELEASE.md
-          RELEASE=$(cat RELEASE.md)
+          sed -i 's/<version>/${{ steps.releaseVersion.outputs.version }}/g' docs/RELEASE.md
+          RELEASE=$(cat docs/RELEASE.md)
           RELEASE="${RELEASE//'%'/'%25'}"
           RELEASE="${RELEASE//$'\n'/'%0A'}"
           RELEASE="${RELEASE//$'\r'/'%0D'}"
