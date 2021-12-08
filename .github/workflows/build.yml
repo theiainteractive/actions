@@ -23,6 +23,7 @@ jobs:
       version: ${{ steps.releaseVersion.outputs.version || steps.buildVersion.outputs.version }}
       notes: ${{ steps.releaseNotes.outputs.notes }}
       matrix: ${{ steps.generateMatrix.outputs.matrix }}
+      matrix_clean: ${{ steps.generateMatrixClean.outputs.matrix_clean }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -86,6 +87,19 @@ jobs:
             ENTRIES="$ENTRIES{\"ue_version\": \"$ue_version\", \"host_platform\": \"$host_platform\", \"target_platform\": \"$target_platform\", \"experimental\": \"$experimental\", \"test\": \"$test\"},"
           done <<< $(yq -r ".envs.$ENVIRONMENT.matrix[] | [.ue_version, .target_platform, .host_platform, .experimental, .test] | @tsv" config.yml)
           echo ::set-output name=matrix::{\"include\":[$ENTRIES]}
+          echo "{\"include\":[$ENTRIES]}"
+
+      - name: Setup Clean Release Asset Matrix
+        id: generateMatrixClean
+        if: steps.releaseCheck.outputs.type=='release'
+        run: |
+          [[ "${{ steps.releaseCheck.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="development"
+          while read ue_version experimental test; do
+            ue_version=$(echo $ue_version | xargs)
+            experimental=$(echo $experimental | xargs)
+            ENTRIES="$ENTRIES{\"ue_version\": \"$ue_version\", "experimental\": \"$experimental\"},"
+          done <<< $(yq -r ".envs.$ENVIRONMENT.matrix[] | [.ue_version, .experimental] | @tsv" config.yml)
+          echo ::set-output name=matrix_clean::{\"include\":[$ENTRIES]}
           echo "{\"include\":[$ENTRIES]}"
 
   build:
@@ -191,7 +205,6 @@ jobs:
           aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
           aws-region: eu-central-1
 
-      # Built Release Assets
       - name: Download Release Asset From S3
         run: aws s3 cp ${{ steps.inject.outputs.PATH_DEPLOY_PRECISE }} ./${{ steps.inject.outputs.SIG_PRECISE }}.zip
 
@@ -205,7 +218,26 @@ jobs:
           asset_name: ${{ steps.inject.outputs.SIG_VERSION }}.zip
           asset_content_type: application/octet-stream
 
-      # Cleaned Release Assets
+  release-assets-clean:
+    name: Upload Clean Asset UE${{ matrix.ue_version }}
+    runs-on: windows-10
+    needs: [meta, release]
+    if: needs.meta.outputs.type=='release'
+    continue-on-error: ${{ matrix.experimental == 'true' }}
+    strategy:
+      matrix: ${{ fromJson(needs.meta.outputs.matrix_clean) }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          token: ${{ secrets.token }}
+
+      - name: Inject Env into GHA
+        id: inject
+        run: |
+          make dev ue="${{ matrix.ue_version }}" version="${{ needs.meta.outputs.version }}" env=production
+          make env-inject
+
       - name: Assemble Clean Release Asset
         run: |
           cp -R src/* ${{ steps.inject.outputs.PACKAGE_NAME }}
@@ -216,13 +248,13 @@ jobs:
           rm -rf ${{ steps.inject.outputs.PACKAGE_NAME }}/Source/*/Private/Tests
 
       - name: Compress Clean Release Asset (.zip)
-        run: 7z a -tzip "${{ steps.inject.outputs.SIG_VERSION }}-clean.zip" "${{ steps.inject.outputs.PACKAGE_NAME }}"
+        run: 7z a -tzip "${{ steps.inject.outputs.SIG_CLEAN }}.zip" "${{ steps.inject.outputs.PACKAGE_NAME }}"
 
       - name: Upload Clean Release Artifact to Github
         uses: actions/upload-artifact@v2
         with:
-          name: ${{ steps.inject.outputs.SIG_VERSION }}-clean.zip
-          path: ./${{ steps.inject.outputs.SIG_VERSION }}-clean.zip
+          name: ${{ steps.inject.outputs.SIG_CLEAN }}.zip
+          path: ./${{ steps.inject.outputs.SIG_CLEAN }}.zip
 
       - name: Upload Clean Release Asset
         uses: actions/upload-release-asset@v1.0.1
@@ -230,8 +262,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: "${{ needs.release.outputs.upload_url }}"
-          asset_path: ./${{ steps.inject.outputs.SIG_VERSION }}-clean.zip
-          asset_name: ${{ steps.inject.outputs.SIG_VERSION }}-clean.zip
+          asset_path: ./${{ steps.inject.outputs.SIG_VERSION }}.zip
+          asset_name: ${{ steps.inject.outputs.SIG_VERSION }}.zip
           asset_content_type: application/octet-stream
 
   release-pr:
