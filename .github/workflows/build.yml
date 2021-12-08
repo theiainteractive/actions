@@ -165,8 +165,8 @@ jobs:
           prerelease: false
   
   release-assets:
-    name: Upload Asset ${{ matrix.ue_version }} ${{ matrix.host_platform}}
-    runs-on: windows-10
+    name: Upload Asset ${{ matrix.target_platform }} UE${{ matrix.ue_version }} ${{ matrix.host_platform}}
+    runs-on: ${{ matrix.host_platform }}
     needs: [meta, release]
     if: needs.meta.outputs.type=='release'
     continue-on-error: ${{ matrix.experimental == 'true' }}
@@ -191,10 +191,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
           aws-region: eu-central-1
 
+      # Built Release Assets
       - name: Download Release Asset From S3
         run: aws s3 cp ${{ steps.inject.outputs.PATH_DEPLOY_PRECISE }} ./${{ steps.inject.outputs.SIG_PRECISE }}.zip
 
-      - name: Upload Release Asset
+      - name: Upload Built Release Asset
         uses: actions/upload-release-asset@v1.0.1
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -202,6 +203,35 @@ jobs:
           upload_url: "${{ needs.release.outputs.upload_url }}"
           asset_path: ./${{ steps.inject.outputs.SIG_PRECISE }}.zip
           asset_name: ${{ steps.inject.outputs.SIG_VERSION }}.zip
+          asset_content_type: application/octet-stream
+
+      # Cleaned Release Assets
+      - name: Assemble Clean Release Asset
+        run: |
+          cp -R src/* ${{ steps.inject.outputs.PACKAGE_NAME }}
+          cp lib/config/${{ matrix.ue_version }}/* ${{ steps.inject.outputs.PACKAGE_NAME }}/
+          cp VERSION ${{ steps.inject.outputs.PACKAGE_NAME }}/
+          rm -rf ${{ steps.inject.outputs.PACKAGE_NAME }}/Content/Tests
+          rm -rf ${{ steps.inject.outputs.PACKAGE_NAME }}/Source/*/Public/Tests
+          rm -rf ${{ steps.inject.outputs.PACKAGE_NAME }}/Source/*/Private/Tests
+
+      - name: Compress Clean Release Asset (.zip)
+        run: 7z a -tzip "${{ steps.inject.outputs.SIG_VERSION }}-clean.zip" "${{ steps.inject.outputs.PACKAGE_NAME }}"
+
+      - name: Upload Clean Release Artifact to Github
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ steps.inject.outputs.SIG_VERSION }}-clean.zip
+          path: ./${{ steps.inject.outputs.SIG_VERSION }}-clean.zip
+
+      - name: Upload Clean Release Asset
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: "${{ needs.release.outputs.upload_url }}"
+          asset_path: ./${{ steps.inject.outputs.SIG_VERSION }}-clean.zip
+          asset_name: ${{ steps.inject.outputs.SIG_VERSION }}-clean.zip
           asset_content_type: application/octet-stream
 
   release-pr:
