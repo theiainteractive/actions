@@ -97,7 +97,7 @@ jobs:
             ue_version=$(echo $ue_version | xargs)
             experimental=$(echo $experimental | xargs)
             ENTRIES="$ENTRIES{\"ue_version\": \"$ue_version\", \"experimental\": \"$experimental\"},"
-          done <<< $(yq -r ".envs.production.matrix-clean[] | [.ue_version, .experimental] | @tsv" config.yml)
+          done <<< $(yq -r ".envs.production.matrix_clean[] | [.ue_version, .experimental] | @tsv" config.yml)
           echo ::set-output name=matrix_clean::{\"include\":[$ENTRIES]}
           echo "{\"include\":[$ENTRIES]}"
 
