@@ -93,12 +93,11 @@ jobs:
         id: generateMatrixClean
         if: steps.releaseCheck.outputs.type=='release'
         run: |
-          [[ "${{ steps.releaseCheck.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="development"
           while read ue_version experimental; do
             ue_version=$(echo $ue_version | xargs)
             experimental=$(echo $experimental | xargs)
-            ENTRIES="$ENTRIES{\"ue_version\": \"$ue_version\", "experimental\": \"$experimental\"},"
-          done <<< $(yq -r ".envs.$ENVIRONMENT.matrix[] | [.ue_version, .experimental] | @tsv" config.yml)
+            ENTRIES="$ENTRIES{\"ue_version\": \"$ue_version\", \"experimental\": \"$experimental\"},"
+          done <<< $(yq -r ".envs.production.matrix-clean[] | [.ue_version, .experimental] | @tsv" config.yml)
           echo ::set-output name=matrix_clean::{\"include\":[$ENTRIES]}
           echo "{\"include\":[$ENTRIES]}"
 
