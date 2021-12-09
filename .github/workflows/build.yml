@@ -261,8 +261,8 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: "${{ needs.release.outputs.upload_url }}"
-          asset_path: ./${{ steps.inject.outputs.SIG_VERSION }}.zip
-          asset_name: ${{ steps.inject.outputs.SIG_VERSION }}.zip
+          asset_path: ./${{ steps.inject.outputs.SIG_CLEAN }}.zip
+          asset_name: ${{ steps.inject.outputs.SIG_CLEAN }}.zip
           asset_content_type: application/octet-stream
 
   release-pr:
