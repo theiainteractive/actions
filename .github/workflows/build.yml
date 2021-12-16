@@ -15,7 +15,7 @@ defaults:
     shell: bash
 
 env:
-  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_CICD }}
+  SLACK_WEBHOOK_URL: ${{ secrets.slack_webhook_cicd }}
 
 jobs:
   slack:
