@@ -14,7 +14,24 @@ defaults:
   run:
     shell: bash
 
+env:
+  SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_CICD }}
+
 jobs:
+  slack:
+    name: Announce to Slack
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract branch name
+        id: branch
+        run: echo "::set-output name=branch::$(echo ${GITHUB_REF#refs/heads/})"
+
+      - uses: act10ns/slack@v1
+        with:
+          status: starting
+          channel: '#cicd'
+          message: Starting TBD workflow for ${{ github.event.repository.name }}/${{ steps.branch.outputs.branch }}
+
   meta:
     name: Generate Metadata
     runs-on: windows-10
