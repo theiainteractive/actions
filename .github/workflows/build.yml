@@ -9,6 +9,8 @@ on:
         required: true
       aws_secret_access_key:
         required: true
+      slack_webhook_cicd:
+        required: true
 
 defaults:
   run:
