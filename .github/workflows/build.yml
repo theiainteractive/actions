@@ -24,6 +24,11 @@ jobs:
     name: Announce to Slack
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: true
+          token: ${{ secrets.token }}
+
       - name: Extract branch name
         id: branch
         run: |
@@ -172,7 +177,7 @@ jobs:
       - name: Cleanup
         if: always()
         run: make clean
-  
+
   slack-post-build:
     name: Announce to Slack
     runs-on: ubuntu-latest
@@ -182,7 +187,7 @@ jobs:
         with:
           status: ${{ job.status }}
           channel: '#cicd'
-          config: .github/config/slack.yml
+          config: .github/slack.yml
 
   release:
     name: Deploy Release
@@ -208,7 +213,7 @@ jobs:
           body: |
             ${{ needs.meta.outputs.notes }}
           prerelease: false
-  
+
   release-assets:
     name: Upload Asset ${{ matrix.target_platform }} UE${{ matrix.ue_version }} ${{ matrix.host_platform}}
     runs-on: ${{ matrix.host_platform }}
