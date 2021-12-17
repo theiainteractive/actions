@@ -20,7 +20,7 @@ env:
   SLACK_WEBHOOK_URL: ${{ secrets.slack_webhook_cicd }}
 
 jobs:
-  slack:
+  slack-start:
     name: Announce to Slack
     runs-on: ubuntu-latest
     steps:
@@ -173,22 +173,10 @@ jobs:
         if: always()
         run: make clean
   
-  slack:
+  slack-post-build:
     name: Announce to Slack
     runs-on: ubuntu-latest
     steps:
-      - name: Extract branch name
-        id: branch
-        run: |
-          echo "::set-output name=branch::$(echo ${GITHUB_REF#refs/heads/})"
-          echo "::set-output name=commit::$(git rev-parse --short=8 HEAD)"
-
-      - uses: act10ns/slack@v1
-        with:
-          status: starting
-          channel: '#cicd'
-          message: Starting Test, Build, Deploy workflow for ${{ github.event.repository.name }} - ${{ steps.branch.outputs.branch }} `${{ steps.branch.outputs.commit }}`
-      
       - uses: act10ns/slack@v1
         if: always()
         with:
