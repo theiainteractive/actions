@@ -39,7 +39,7 @@ jobs:
         if: always()
         with:
           channel: '#cicd'
-          config: .github/slack.yml
+          config: .github/slack/toast.yml
 
   meta:
     name: Generate Metadata
