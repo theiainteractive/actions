@@ -185,6 +185,7 @@ jobs:
           channel: '#cicd'
           status: ${{ job.status }}
           config: .github/slack/toast_build.yml
+        env:
           target_platform: ${{ matrix.target_platform }}
           ue_version: ${{ matrix.ue_version }}
 
