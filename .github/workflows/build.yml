@@ -183,8 +183,10 @@ jobs:
         if: always()
         with:
           channel: '#cicd'
-          message: ${{ matrix.target_platform }} UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
           status: ${{ job.status }}
+          config: .github/slack/toast_build.yml
+          target_platform: ${{ matrix.target_platform }}
+          ue_version: ${{ matrix.ue_version }}
 
   release:
     name: Deploy Release
