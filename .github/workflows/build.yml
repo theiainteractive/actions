@@ -183,7 +183,8 @@ jobs:
         if: always()
         with:
           channel: '#cicd'
-          message: ${{ job.status }} - ${{ matrix.target_platform }} UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
+          message: ${{ matrix.target_platform }} UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
+          status: ${{ job.status }}
 
   release:
     name: Deploy Release
