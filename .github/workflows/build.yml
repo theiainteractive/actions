@@ -29,18 +29,7 @@ jobs:
           submodules: true
           token: ${{ secrets.token }}
 
-      - name: Extract branch name
-        id: branch
-        run: |
-          echo "::set-output name=branch::$(echo ${GITHUB_REF#refs/heads/})"
-          echo "::set-output name=commit::$(git rev-parse --short=8 HEAD)"
-
-      - uses: act10ns/slack@v1
-        if: always()
-        with:
-          channel: '#cicd'
-          config: .github/slack/toast.yml
-          status: starting
+      
 
   meta:
     name: Generate Metadata
@@ -127,6 +116,21 @@ jobs:
           done <<< $(yq -r ".envs.production.matrix_clean[] | [.ue_version, .experimental] | @tsv" config.yml)
           echo ::set-output name=matrix_clean::{\"include\":[$ENTRIES]}
           echo "{\"include\":[$ENTRIES]}"
+      
+      - name: Extract Slack Notification Data
+        id: slack
+        run: |
+          echo "::set-output name=branch::$(echo ${GITHUB_REF#refs/heads/})"
+          echo "::set-output name=commit::$(git rev-parse --short=8 HEAD)"
+
+      - uses: act10ns/slack@v1
+        if: always()
+        with:
+          channel: '#cicd'
+          config: .github/slack/toast.yml
+          status: starting
+        env:
+          matrix: ${{ steps.generateMatrix.outputs.matrix }}
 
   build:
     name: Build for ${{ matrix.target_platform }} UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
