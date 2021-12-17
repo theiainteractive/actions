@@ -20,17 +20,6 @@ env:
   SLACK_WEBHOOK_URL: ${{ secrets.slack_webhook_cicd }}
 
 jobs:
-  slack-start:
-    name: Announce to Slack
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: true
-          token: ${{ secrets.token }}
-
-      
-
   meta:
     name: Generate Metadata
     runs-on: windows-10
