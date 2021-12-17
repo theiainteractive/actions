@@ -40,6 +40,7 @@ jobs:
         with:
           channel: '#cicd'
           config: .github/slack/toast.yml
+          status: starting
 
   meta:
     name: Generate Metadata
