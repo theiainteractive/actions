@@ -26,13 +26,15 @@ jobs:
     steps:
       - name: Extract branch name
         id: branch
-        run: echo "::set-output name=branch::$(echo ${GITHUB_REF#refs/heads/})"
+        run: |
+          echo "::set-output name=branch::$(echo ${GITHUB_REF#refs/heads/})"
+          echo "::set-output name=commit::$(git rev-parse --short=8 HEAD)"
 
       - uses: act10ns/slack@v1
         with:
           status: starting
           channel: '#cicd'
-          message: Starting TBD workflow for ${{ github.event.repository.name }}/${{ steps.branch.outputs.branch }}
+          message: Starting Test, Build, Deploy workflow for ${{ github.event.repository.name }} - ${{ steps.branch.outputs.branch }} `${{ steps.branch.outputs.commit }}`
 
   meta:
     name: Generate Metadata
@@ -170,6 +172,29 @@ jobs:
       - name: Cleanup
         if: always()
         run: make clean
+  
+  slack:
+    name: Announce to Slack
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract branch name
+        id: branch
+        run: |
+          echo "::set-output name=branch::$(echo ${GITHUB_REF#refs/heads/})"
+          echo "::set-output name=commit::$(git rev-parse --short=8 HEAD)"
+
+      - uses: act10ns/slack@v1
+        with:
+          status: starting
+          channel: '#cicd'
+          message: Starting Test, Build, Deploy workflow for ${{ github.event.repository.name }} - ${{ steps.branch.outputs.branch }} `${{ steps.branch.outputs.commit }}`
+      
+      - uses: act10ns/slack@v1
+        if: always()
+        with:
+          status: ${{ job.status }}
+          channel: '#cicd'
+          config: .github/config/slack.yml
 
   release:
     name: Deploy Release
@@ -314,5 +339,3 @@ jobs:
           pr_draft: false
           pr_allow_empty: true
           github_token: ${{ github.token }}
-  
-
