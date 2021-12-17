@@ -36,10 +36,10 @@ jobs:
           echo "::set-output name=commit::$(git rev-parse --short=8 HEAD)"
 
       - uses: act10ns/slack@v1
+        if: always()
         with:
-          status: starting
           channel: '#cicd'
-          message: Starting Test, Build, Deploy workflow for ${{ github.event.repository.name }} - ${{ steps.branch.outputs.branch }} `${{ steps.branch.outputs.commit }}`
+          config: .github/slack.yml
 
   meta:
     name: Generate Metadata
@@ -178,16 +178,11 @@ jobs:
         if: always()
         run: make clean
 
-  slack-post-build:
-    name: Announce to Slack
-    runs-on: ubuntu-latest
-    steps:
       - uses: act10ns/slack@v1
         if: always()
         with:
-          status: ${{ job.status }}
           channel: '#cicd'
-          config: .github/slack.yml
+          message: ${{ job.status }} - ${{ matrix.target_platform }} UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
 
   release:
     name: Deploy Release
