@@ -222,6 +222,13 @@ jobs:
             ${{ needs.meta.outputs.notes }}
           prerelease: false
 
+      - name: Notify Slack
+        uses: act10ns/slack@v1
+        with:
+          channel: '#cicd'
+          status: ${{ needs.build.result }}
+          message: "Release ${{ needs.meta.outputs.version }} created."
+
   release-assets:
     name: Upload Asset ${{ matrix.target_platform }} UE${{ matrix.ue_version }} ${{ matrix.host_platform}}
     runs-on: ${{ matrix.host_platform }}
