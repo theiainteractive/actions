@@ -119,7 +119,7 @@ jobs:
           status: starting
         env:
           matrix: ${{ steps.generateMatrix.outputs.matrix }}
-          commit: ${{ github.event.commits[0].message }}
+          commit: ${{ github.event.head_commit.message }}
 
   build:
     name: Build for ${{ matrix.target_platform }} UE${{ matrix.ue_version }} on ${{ matrix.host_platform }}
@@ -181,7 +181,7 @@ jobs:
         env:
           target_platform: ${{ matrix.target_platform }}
           ue_version: ${{ matrix.ue_version }}
-          commit: ${{ github.event.commits[0].message }}
+          commit: ${{ github.event.head_commit.message }}
 
   build-complete-notify:
     name: Notify Slack on Build Matrix Complete
