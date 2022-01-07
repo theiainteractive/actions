@@ -104,7 +104,7 @@ jobs:
           done <<< $(yq -r ".envs.production.matrix_clean[] | [.ue_version, .experimental] | @tsv" config.yml)
           echo ::set-output name=matrix_clean::{\"include\":[$ENTRIES]}
           echo "{\"include\":[$ENTRIES]}"
-      
+
       - name: Extract Slack Notification Data
         id: slack
         run: |
@@ -195,7 +195,6 @@ jobs:
           channel: '#cicd'
           status: ${{ needs.build.result }}
           message: "{{icon jobStatus}} - Build matrix {{jobStatus}}"
-        
 
   release:
     name: Deploy Release
@@ -227,7 +226,7 @@ jobs:
         with:
           channel: '#cicd'
           status: ${{ needs.build.result }}
-          message: "Release ${{ needs.meta.outputs.version }} created."
+          message: "{{icon jobStatus}} - Release ${{ needs.meta.outputs.version }} created"
 
   release-assets:
     name: Upload Asset ${{ matrix.target_platform }} UE${{ matrix.ue_version }} ${{ matrix.host_platform}}
