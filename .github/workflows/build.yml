@@ -194,7 +194,7 @@ jobs:
         with:
           channel: '#cicd'
           status: ${{ needs.build.result }}
-          message: "Build matrix complete."
+          message: "{{icon jobStatus}} - Build matrix complete"
         
 
   release:
