@@ -138,16 +138,19 @@ jobs:
       - name: Ensure LFS Assets Dereferenced
         run: git lfs pull
 
-      - name: Dotenv
+      - name: Environment Variables
         id: inject
         run: |
           [[ "${{ needs.meta.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="development"
           make dev ue="${{ matrix.ue_version }}" version="${{ needs.meta.outputs.version }}" env="$ENVIRONMENT" target_platform="${{ matrix.target_platform }}"
           make env-inject
 
-      - name: Make Target Package/Build
+      - name: Coalesce Dependencies
+        run: make dependencies
+
+      - name: Build
         run: if [[ "${{ needs.meta.outputs.type }}" == "release" ]]; then make package; else make build; fi
-      
+
       - name: Run Tests
         if: matrix.test=='true'
         run: make test nobuild=true 
@@ -189,8 +192,6 @@ jobs:
     needs: [build]
     if: ${{ always() }}
     steps:
-      - run: echo ${{ needs.build.result }}
-
       - name: Notify Slack
         uses: act10ns/slack@v1
         with:
