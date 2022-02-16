@@ -151,7 +151,6 @@ jobs:
           make env-inject
 
       - name: Coalesce Dependencies
-        if: ${{ secrets.dependencies == 'true' }}
         id: dependencies
         run: |
           aws configure set default.s3.use_accelerate_endpoint true
