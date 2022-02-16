@@ -11,8 +11,8 @@ on:
         required: true
       slack_webhook_cicd:
         required: true
-      upload_asset:
-        default: true
+      skip_asset_upload:
+        required: false
 
 defaults:
   run:
@@ -172,7 +172,7 @@ jobs:
         run: |
           pushd "${{ steps.outputs.dependencies.pluginsdir }}"
             for ZIP in *.zip; do
-              if [[ "${{ steps.inject.outputs.PLATFORM_HOST" == "windows" ]]; then
+              if [[ "${{ steps.inject.outputs.PLATFORM_HOST }}" == "windows" ]]; then
                   7z -o "$ZIP"
                   rm $ZIP
               else
@@ -181,7 +181,7 @@ jobs:
               done
             done
           popd
-      
+
       - name: Move Dependencies to Engine Plugin Directory
         if: steps.dependencies.outputs.dependencies=='true'
         id: move
@@ -196,19 +196,19 @@ jobs:
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
-        if: secrets.upload_asset=='true'
+        if: secrets.skip_asset_upload!='true'
         with:
           aws-access-key-id: ${{ secrets.aws_access_key_id }}
           aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
           aws-region: eu-central-1
 
       - name: Deploy Artifact
-        if: secrets.upload_asset=='true'
+        if: secrets.skip_asset_upload!='true'
         run: make deploy
 
       - name: Upload Build Artifact to Github
         uses: actions/upload-artifact@v2
-        if: secrets.upload_asset=='true'
+        if: secrets.skip_asset_upload!='true'
         with:
           name: ${{ steps.inject.outputs.SIG_PRECISE }}.zip
           path: ./${{ steps.inject.outputs.PATH_ARTIFACT_RELATIVE }}/${{ steps.inject.outputs.SIG_PRECISE }}.zip
@@ -281,7 +281,7 @@ jobs:
     name: Upload Asset ${{ matrix.target_platform }} UE${{ matrix.ue_version }} ${{ matrix.host_platform}}
     runs-on: ${{ matrix.host_platform }}
     needs: [meta, release]
-    if: needs.meta.outputs.type=='release' && secrets.upload_asset=='true'
+    if: needs.meta.outputs.type=='release' && secrets.skip_asset_upload!='true'
     continue-on-error: ${{ matrix.experimental == 'true' }}
     strategy:
       matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
@@ -321,7 +321,7 @@ jobs:
     name: Upload Clean Asset UE${{ matrix.ue_version }}
     runs-on: windows-10
     needs: [meta, release]
-    if: needs.meta.outputs.type=='release' && secrets.upload_asset=='true'
+    if: needs.meta.outputs.type=='release' && secrets.skip_asset_upload!='true'
     continue-on-error: ${{ matrix.experimental == 'true' }}
     strategy:
       matrix: ${{ fromJson(needs.meta.outputs.matrix_clean) }}
