@@ -18,6 +18,7 @@ defaults:
 
 env:
   SLACK_WEBHOOK_URL: ${{ secrets.slack_webhook_cicd }}
+  PLUGIN_PATH_RELATIVE: Engine/Plugins
 
 jobs:
   meta:
@@ -146,7 +147,39 @@ jobs:
           make env-inject
 
       - name: Coalesce Dependencies
-        run: make dependencies
+        if: secrets.dependencies == 'true'
+        id: dependencies
+        run: |
+          aws configure set default.s3.use_accelerate_endpoint true
+          aws configure set default.s3.multipart_threshold 300MB
+
+          PLUGIN_TMP_DIR=$(mktemp -d BuildTemp.XXXXXX)
+
+          mkdir -p "${{ env.TEMP_PLUGIN_DIR }}"
+          while read S3_URL NAME; do
+              aws s3 cp "$S3_URL/$NAME-ue${{ steps.inject.outputs.VERSION_UE }}-${{ steps.inject.outputs.PLATFORM_UE }}-latest.zip" $PLUGIN_TMP_DIR
+          done <<< $(yq -r ".dependencies[] | [.s3, .name] | @tsv" config.yml)
+
+          echo "::set-output name=pluginsdir::$PLUGIN_TMP_DIR"
+
+      - name: Extract Dependencies
+        if: secrets.dependencies == 'true'
+        run: |
+          pushd "${{ steps.outputs.dependencies.pluginsdir }}"
+            for ZIP in *.zip; do
+              if [[ "${{ steps.inject.outputs.PLATFORM_HOST" == "windows" ]]; then
+                  7z -o "$ZIP"
+                  rm $ZIP
+              else
+                  unzip -o "$ZIP"
+                  rm $ZIP
+              done
+            done
+          popd
+      
+      - name: Move Dependencies to Engine Plugin Directory
+        if: secrets.dependencies == 'true'
+        run: mv "${{ steps.outputs.dependencies.pluginsdir }}" "${{ steps.inject.outputs.UE_ROOT }}/Engine/Plugins/Editor/"
 
       - name: Build
         run: if [[ "${{ needs.meta.outputs.type }}" == "release" ]]; then make package; else make build; fi
@@ -171,9 +204,13 @@ jobs:
           name: ${{ steps.inject.outputs.SIG_PRECISE }}.zip
           path: ./${{ steps.inject.outputs.PATH_ARTIFACT_RELATIVE }}/${{ steps.inject.outputs.SIG_PRECISE }}.zip
 
-      - name: Cleanup
+      - name: Cleanup Work Area
         if: always()
         run: make clean
+
+      - name: Cleanup Engine Plugin Directory
+        if: always()
+        run: rm -rf "${{ steps.inject.outputs.UE_ROOT }}/Engine/Plugins/Editor/${{ steps.dependencies.outputs.pluginsdir }}"
 
       - uses: act10ns/slack@v1
         if: always()
