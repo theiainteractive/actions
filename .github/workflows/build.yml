@@ -11,6 +11,8 @@ on:
         required: true
       slack_webhook_cicd:
         required: true
+      upload_asset:
+        default: true
 
 defaults:
   run:
@@ -153,17 +155,20 @@ jobs:
           aws configure set default.s3.use_accelerate_endpoint true
           aws configure set default.s3.multipart_threshold 300MB
 
+          HAS_DEPENDENCIES=false
           PLUGIN_TMP_DIR=$(mktemp -d BuildTemp.XXXXXX)
 
           mkdir -p "${{ env.TEMP_PLUGIN_DIR }}"
           while read S3_URL NAME; do
               aws s3 cp "$S3_URL/$NAME-ue${{ steps.inject.outputs.VERSION_UE }}-${{ steps.inject.outputs.PLATFORM_UE }}-latest.zip" $PLUGIN_TMP_DIR
+              HAS_DEPENDENCIES=true
           done <<< $(yq -r ".dependencies[] | [.s3, .name] | @tsv" config.yml)
 
           echo "::set-output name=pluginsdir::$PLUGIN_TMP_DIR"
+          echo "::set-output name=dependencies::$HAS_DEPENDENCIES"
 
       - name: Extract Dependencies
-        if: secrets.dependencies == 'true'
+        if: steps.dependencies.outputs.dependencies=='true'
         run: |
           pushd "${{ steps.outputs.dependencies.pluginsdir }}"
             for ZIP in *.zip; do
@@ -178,7 +183,7 @@ jobs:
           popd
       
       - name: Move Dependencies to Engine Plugin Directory
-        if: secrets.dependencies == 'true'
+        if: steps.dependencies.outputs.dependencies=='true'
         id: move
         run: mv "${{ steps.outputs.dependencies.pluginsdir }}" "${{ steps.inject.outputs.UE_ROOT }}/Engine/Plugins/Editor/"
 
@@ -191,16 +196,19 @@ jobs:
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
+        if: secrets.upload_asset=='true'
         with:
           aws-access-key-id: ${{ secrets.aws_access_key_id }}
           aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
           aws-region: eu-central-1
 
       - name: Deploy Artifact
+        if: secrets.upload_asset=='true'
         run: make deploy
 
       - name: Upload Build Artifact to Github
         uses: actions/upload-artifact@v2
+        if: secrets.upload_asset=='true'
         with:
           name: ${{ steps.inject.outputs.SIG_PRECISE }}.zip
           path: ./${{ steps.inject.outputs.PATH_ARTIFACT_RELATIVE }}/${{ steps.inject.outputs.SIG_PRECISE }}.zip
@@ -210,7 +218,7 @@ jobs:
         run: make clean
 
       - name: Cleanup Engine Plugin Directory
-        if: steps.move.outcome == 'success'
+        if: steps.move.outcome=='success'
         run: rm -rf "${{ steps.inject.outputs.UE_ROOT }}/Engine/Plugins/Editor/${{ steps.dependencies.outputs.pluginsdir }}"
 
       - uses: act10ns/slack@v1
@@ -273,7 +281,7 @@ jobs:
     name: Upload Asset ${{ matrix.target_platform }} UE${{ matrix.ue_version }} ${{ matrix.host_platform}}
     runs-on: ${{ matrix.host_platform }}
     needs: [meta, release]
-    if: needs.meta.outputs.type=='release'
+    if: needs.meta.outputs.type=='release' && secrets.upload_asset=='true'
     continue-on-error: ${{ matrix.experimental == 'true' }}
     strategy:
       matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
@@ -313,7 +321,7 @@ jobs:
     name: Upload Clean Asset UE${{ matrix.ue_version }}
     runs-on: windows-10
     needs: [meta, release]
-    if: needs.meta.outputs.type=='release'
+    if: needs.meta.outputs.type=='release' && secrets.upload_asset=='true'
     continue-on-error: ${{ matrix.experimental == 'true' }}
     strategy:
       matrix: ${{ fromJson(needs.meta.outputs.matrix_clean) }}
