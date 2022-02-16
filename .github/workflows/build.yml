@@ -179,6 +179,7 @@ jobs:
       
       - name: Move Dependencies to Engine Plugin Directory
         if: secrets.dependencies == 'true'
+        id: move
         run: mv "${{ steps.outputs.dependencies.pluginsdir }}" "${{ steps.inject.outputs.UE_ROOT }}/Engine/Plugins/Editor/"
 
       - name: Build
@@ -209,7 +210,7 @@ jobs:
         run: make clean
 
       - name: Cleanup Engine Plugin Directory
-        if: always()
+        if: steps.move.outcome == 'success'
         run: rm -rf "${{ steps.inject.outputs.UE_ROOT }}/Engine/Plugins/Editor/${{ steps.dependencies.outputs.pluginsdir }}"
 
       - uses: act10ns/slack@v1
