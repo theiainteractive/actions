@@ -11,11 +11,6 @@ on:
         required: true
       slack_webhook_cicd:
         required: true
-    inputs:
-      upload_assets:
-        type: boolean
-        default: true
-        required: false
 
 defaults:
   run:
@@ -30,11 +25,13 @@ jobs:
     name: Generate Metadata
     runs-on: windows-10
     outputs:
-      type: ${{ steps.releaseCheck.outputs.type }}
-      version: ${{ steps.releaseVersion.outputs.version || steps.buildVersion.outputs.version }}
-      notes: ${{ steps.releaseNotes.outputs.notes }}
-      matrix: ${{ steps.generateMatrix.outputs.matrix }}
-      matrix_clean: ${{ steps.generateMatrixClean.outputs.matrix_clean }}
+      type:           ${{ steps.releaseCheck.outputs.type }}
+      version:        ${{ steps.releaseVersion.outputs.version || steps.buildVersion.outputs.version }}
+      notes:          ${{ steps.releaseNotes.outputs.notes }}
+      matrix:         ${{ steps.generateMatrix.outputs.matrix }}
+      matrix_clean:   ${{ steps.generateMatrixClean.outputs.matrix_clean }}
+      upload_github:  ${{ steps.assetUploadTargets.outputs.github }}
+      upload_s3:      ${{ steps.assetUploadTargets.outputs.s3 }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -110,6 +107,12 @@ jobs:
           done <<< $(yq -r ".envs.production.matrix_clean[] | [.ue_version, .experimental] | @tsv" config.yml)
           echo ::set-output name=matrix_clean::{\"include\":[$ENTRIES]}
           echo "{\"include\":[$ENTRIES]}"
+      
+      - name: Asset Upload Targets
+        id: assetUploadTargets
+        run: |
+          echo ::set-output name=github::$(yq -r .build_settings.upload_assets.github config.yml)
+          echo ::set-output name=s3::$(yq -r .build_settings.upload_assets.s3 config.yml)
 
       - name: Extract Slack Notification Data
         id: slack
@@ -198,19 +201,19 @@ jobs:
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
-        if: inputs.upload_assets
+        if: needs.meta.outputs.upload_s3=='true'
         with:
           aws-access-key-id: ${{ secrets.aws_access_key_id }}
           aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
           aws-region: eu-central-1
 
       - name: Deploy Artifact
-        if: inputs.upload_assets
+        if: needs.meta.outputs.upload_s3=='true'
         run: make deploy
 
       - name: Upload Build Artifact to Github
         uses: actions/upload-artifact@v2
-        if: inputs.upload_assets
+        if: needs.meta.outputs.upload_github=='true'
         with:
           name: ${{ steps.inject.outputs.SIG_PRECISE }}.zip
           path: ./${{ steps.inject.outputs.PATH_ARTIFACT_RELATIVE }}/${{ steps.inject.outputs.SIG_PRECISE }}.zip
@@ -283,7 +286,7 @@ jobs:
     name: Upload Asset ${{ matrix.target_platform }} UE${{ matrix.ue_version }} ${{ matrix.host_platform}}
     runs-on: ${{ matrix.host_platform }}
     needs: [meta, release]
-    if: needs.meta.outputs.type=='release' && inputs.upload_assets
+    if: needs.meta.outputs.type=='release' && needs.meta.outputs.upload_s3=='true'
     continue-on-error: ${{ matrix.experimental == 'true' }}
     strategy:
       matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
