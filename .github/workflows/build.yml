@@ -287,7 +287,7 @@ jobs:
     name: Upload Asset ${{ matrix.target_platform }} UE${{ matrix.ue_version }} ${{ matrix.host_platform}}
     runs-on: ${{ matrix.host_platform }}
     needs: [meta, release]
-    if: needs.meta.outputs.type=='release' && needs.meta.outputs.upload_s3=='true'
+    if: needs.meta.outputs.type=='release' && needs.meta.outputs.upload_github=='true' && needs.meta.outputs.upload_s3=='true'
     continue-on-error: ${{ matrix.experimental == 'true' }}
     strategy:
       matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
@@ -327,7 +327,7 @@ jobs:
     name: Upload Clean Asset UE${{ matrix.ue_version }}
     runs-on: windows-10
     needs: [meta, release]
-    if: needs.meta.outputs.type=='release' && inputs.upload_assets
+    if: needs.meta.outputs.type=='release' && inputs.upload_assets.github=='true'
     continue-on-error: ${{ matrix.experimental == 'true' }}
     strategy:
       matrix: ${{ fromJson(needs.meta.outputs.matrix_clean) }}
