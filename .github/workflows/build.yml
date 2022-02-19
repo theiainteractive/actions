@@ -219,7 +219,9 @@ jobs:
 
       - name: Cleanup Work Area
         if: always()
-        run: make clean
+        run: |
+          make clean
+          rm -rf "${{ steps.dependencies.outputs.pluginsdir }}"
 
       - name: Cleanup Engine Plugin Directory
         if: steps.move.outcome=='success'
