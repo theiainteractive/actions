@@ -167,7 +167,7 @@ jobs:
           while read S3_URL NAME; do
               aws s3 cp "$S3_URL/$NAME-ue${{ steps.inject.outputs.VERSION_UE }}-${{ steps.inject.outputs.PLATFORM_UE }}-latest.zip" $PLUGIN_TMP_DIR
               HAS_DEPENDENCIES=true
-          done <<< $(yq -r ".dependencies[] | [.s3, .name] | @tsv" config.yml)
+          done <<< $(yq -r ".build_settings.dependencies[] | [.s3, .name] | @tsv" config.yml)
 
           echo "::set-output name=pluginsdir::$PLUGIN_TMP_DIR"
           echo "::set-output name=dependencies::$HAS_DEPENDENCIES"
