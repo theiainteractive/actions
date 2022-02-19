@@ -190,7 +190,7 @@ jobs:
       - name: Move Dependencies to Engine Plugin Directory
         if: steps.dependencies.outputs.dependencies=='true'
         id: move
-        run: mv "${{ steps.outputs.dependencies.pluginsdir }}" "${{ steps.inject.outputs.UE_ROOT }}/Engine/Plugins/Editor/"
+        run: mv "${{ steps.dependencies.outputs.pluginsdir }}" "${{ steps.inject.outputs.UE_ROOT }}/Engine/Plugins/Editor/"
 
       - name: Build
         run: if [[ "${{ needs.meta.outputs.type }}" == "release" ]]; then make package; else make build; fi
