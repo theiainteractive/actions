@@ -163,7 +163,6 @@ jobs:
           HAS_DEPENDENCIES=false
           PLUGIN_TMP_DIR=$(mktemp -d BuildTemp.XXXXXX)
 
-          mkdir -p "${{ env.TEMP_PLUGIN_DIR }}"
           while read S3_URL NAME; do
               aws s3 cp "$S3_URL/$NAME-ue${{ steps.inject.outputs.VERSION_UE }}-${{ steps.inject.outputs.PLATFORM_UE }}-latest.zip" $PLUGIN_TMP_DIR
               HAS_DEPENDENCIES=true
