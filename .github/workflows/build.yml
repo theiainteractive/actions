@@ -189,7 +189,7 @@ jobs:
               else
                   unzip -o "$ZIP"
                   rm $ZIP
-              done
+              fi
             done
           popd
 
