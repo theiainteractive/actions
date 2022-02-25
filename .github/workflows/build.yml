@@ -181,7 +181,7 @@ jobs:
       - name: Extract Dependencies
         if: steps.dependencies.outputs.dependencies=='true'
         run: |
-          pushd "${{ steps.outputs.dependencies.pluginsdir }}"
+          pushd "${{ steps.dependencies.outputs.pluginsdir }}"
             for ZIP in *.zip; do
               if [[ "${{ steps.inject.outputs.PLATFORM_HOST }}" == "windows" ]]; then
                   7z -o "$ZIP"
