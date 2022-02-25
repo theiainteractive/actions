@@ -184,10 +184,11 @@ jobs:
           pushd "${{ steps.dependencies.outputs.pluginsdir }}"
             for ZIP in *.zip; do
               if [[ "${{ steps.inject.outputs.PLATFORM_HOST }}" == "windows" ]]; then
-                  7z -o "$ZIP"
+                  # extract $ZIP with 7z to current directory
+                  7z x -y "$ZIP"
                   rm $ZIP
               else
-                  unzip -o "$ZIP"
+                  unzip "$ZIP"
                   rm $ZIP
               fi
             done
