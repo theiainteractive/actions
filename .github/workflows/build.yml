@@ -179,7 +179,7 @@ jobs:
           echo "::set-output name=dependencies_exist::$HAS_DEPENDENCIES"
 
       - name: Extract Dependencies
-        if: steps.dependencies.outputs.dependencies=='true'
+        if: steps.dependencies.outputs.dependencies_exist=='true'
         run: |
           pushd "${{ steps.dependencies.outputs.pluginsdir }}"
             for ZIP in *.zip; do
@@ -231,7 +231,7 @@ jobs:
           rm -rf "${{ steps.dependencies.outputs.pluginsdir }}"
 
       - name: Cleanup Engine Plugin Directory
-        if: steps.move.outcome=='success'
+        if: always()
         run: rm -rf "${{ steps.inject.outputs.UE_ROOT }}/Engine/Plugins/Editor/${{ steps.dependencies.outputs.pluginsdir }}"
 
       - uses: act10ns/slack@v1
