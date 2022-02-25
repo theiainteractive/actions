@@ -153,6 +153,13 @@ jobs:
           [[ "${{ needs.meta.outputs.type }}" == "release" ]] && ENVIRONMENT="production" || ENVIRONMENT="development"
           make dev ue="${{ matrix.ue_version }}" version="${{ needs.meta.outputs.version }}" env="$ENVIRONMENT" target_platform="${{ matrix.target_platform }}"
           make env-inject
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.aws_access_key_id }}
+          aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
+          aws-region: eu-central-1
 
       - name: Coalesce Dependencies
         id: dependencies
