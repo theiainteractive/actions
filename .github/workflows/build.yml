@@ -176,7 +176,7 @@ jobs:
           done <<< $(yq -r ".build_settings.dependencies[] | [.s3, .name] | @tsv" config.yml)
 
           echo "::set-output name=pluginsdir::$PLUGIN_TMP_DIR"
-          echo "::set-output name=dependencies::$HAS_DEPENDENCIES"
+          echo "::set-output name=dependencies_exist::$HAS_DEPENDENCIES"
 
       - name: Extract Dependencies
         if: steps.dependencies.outputs.dependencies=='true'
@@ -194,7 +194,7 @@ jobs:
           popd
 
       - name: Move Dependencies to Engine Plugin Directory
-        if: steps.dependencies.outputs.dependencies=='true'
+        if: steps.dependencies.outputs.dependencies_exist=='true'
         id: move
         run: mv "${{ steps.dependencies.outputs.pluginsdir }}" "${{ steps.inject.outputs.UE_ROOT }}/Engine/Plugins/Editor/"
 
