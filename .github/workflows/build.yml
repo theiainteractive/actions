@@ -17,8 +17,9 @@ defaults:
     shell: bash
 
 env:
-  SLACK_WEBHOOK_URL: ${{ secrets.slack_webhook_cicd }}
-  PLUGIN_PATH_RELATIVE: Engine/Plugins
+  SLACK_WEBHOOK_URL:      ${{ secrets.slack_webhook_cicd }}
+  PLUGIN_PATH_RELATIVE:   Engine/Plugins
+  PLUGIN_TMP_DIR_PREFIX:  BuildTemp
 
 jobs:
   meta:
@@ -168,7 +169,7 @@ jobs:
           aws configure set default.s3.multipart_threshold 300MB
 
           HAS_DEPENDENCIES=false
-          PLUGIN_TMP_DIR=$(mktemp -d BuildTemp.XXXXXX)
+          PLUGIN_TMP_DIR=$(mktemp -d ${{ env.PLUGIN_TMP_DIR_PREFIX }}.XXXXXX)
 
           while read S3_URL NAME; do
               aws s3 cp "$S3_URL/$NAME-ue${{ steps.inject.outputs.VERSION_UE }}-${{ steps.inject.outputs.PLATFORM_UE }}-latest.zip" $PLUGIN_TMP_DIR
@@ -233,7 +234,7 @@ jobs:
 
       - name: Cleanup Engine Plugin Directory
         if: always()
-        run: rm -rf "${{ steps.inject.outputs.UE_ROOT }}/Engine/Plugins/Editor/${{ steps.dependencies.outputs.pluginsdir }}"
+        run: rm -rf "${{ steps.inject.outputs.UE_ROOT }}/Engine/Plugins/Editor/${{ env.PLUGIN_TMP_DIR_PREFIX }}.*"
 
       - uses: act10ns/slack@v1
         if: always()
