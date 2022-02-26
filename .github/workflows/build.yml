@@ -201,7 +201,7 @@ jobs:
         run: |
           EDITOR_PLUGIN_DIR="${{ steps.inject.outputs.UE_ROOT }}/Engine/Plugins/Editor"
           rm -rf "$EDITOR_PLUGIN_DIR/${{ env.PLUGIN_TMP_DIR_PREFIX }}.*"
-          mv "${{ steps.dependencies.outputs.pluginsdir }}" $EDITOR_PLUGIN_DIR
+          mv "${{ steps.dependencies.outputs.pluginsdir }}" "$EDITOR_PLUGIN_DIR"
 
       - name: Build
         run: if [[ "${{ needs.meta.outputs.type }}" == "release" ]]; then make package; else make build; fi
