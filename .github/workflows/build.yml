@@ -197,7 +197,6 @@ jobs:
 
       - name: Move Dependencies to Engine Plugin Directory
         if: steps.dependencies.outputs.dependencies_exist=='true'
-        id: move
         run: |
           EDITOR_PLUGIN_DIR="${{ steps.inject.outputs.UE_ROOT }}/Engine/Plugins/Editor"
           rm -rf "$EDITOR_PLUGIN_DIR/${{ env.PLUGIN_TMP_DIR_PREFIX }}.*"
