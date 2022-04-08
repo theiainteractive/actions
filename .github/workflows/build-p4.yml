@@ -1,0 +1,119 @@
+name: P4 Build
+
+on:
+  repository_dispatch:
+    types: [perforce-trigger]
+    inputs:
+      depot:
+        type: string
+        description: The P4 depot to look in
+        required: true
+      stream:
+        type: string
+        description: The stream to look in
+        required: true
+
+  workflow_dispatch:
+    inputs:
+      depot:
+        type: string
+        description: The P4 depot to look in
+        default: streamsDepot
+        required: true
+      stream:
+        type: string
+        description: The stream to look in
+        default: mainline
+        required: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build-p4:
+    runs-on: windows-10
+    env:
+      P4PORT:    ${{ secrets.P4PORT }}
+      P4USER:    ${{ secrets.P4USER }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.REPO_SCOPED_TOKEN }}
+
+      - name: Checkout Boilerplate Project Code (Build scripts)
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.REPO_SCOPED_TOKEN }}
+          repository: theiainteractive/boilerplate-project
+          path: boilerplate-project
+
+      - name: P4 Trust
+        uses: perforce/setup-p4@v1
+        with:
+          command: trust
+          arguments: -y
+
+      - name: P4 Login
+        uses: perforce/setup-p4@v1
+        with:
+          command: login
+        env:
+          P4PASSWD:  ${{ secrets.P4PASSWD }}
+
+      - name: P4 Client Workspace
+        uses: perforce/setup-p4@v1
+        with:
+          command: client
+          arguments: -i
+          spec: |
+            Client:	gha-p4
+            Owner:	${{ secrets.P4USER }}
+            Description:
+              Created by ${{ secrets.P4USER }}.
+            Root:	gha-p4
+            Options:	noallwrite noclobber nocompress unlocked modtime rmdir
+            SubmitOptions:	leaveunchanged
+            LineEnd:	local
+            View:
+              //${{ github.event.inputs.depot }}/${{ github.event.inputs.stream }}/... //gha-p4/${{ github.event.inputs.depot }}/${{ github.event.inputs.stream }}/...
+
+      - name: P4 Sync
+        uses: perforce/setup-p4@v1
+        env:
+          P4CLIENT: gha-p4
+        with:
+          command: sync
+          arguments: -f
+
+      - name: Approximate Boilerplate Project Layout
+        run: |
+          echo "Approximating boilerplate project repo layout..."
+          mkdir src
+          mv gha-p4/${{ github.event.inputs.depot }}/${{ github.event.inputs.stream }}/${{ github.event.inputs.stream }} src/
+          cp -r boilerplate-project/bin .
+          cp -r boilerplate-project/Makefile .
+          echo "name: ${{ github.event.inputs.stream }}" >> config.yml
+
+      - name: Environment Variables
+        run: |
+          echo "Retrieving intended engine version from the .uproject file..."
+          UPROJECT_FILE=`ls -1 src/${{ github.event.inputs.stream }}/*.uproject | head -n 1`
+          UE_VERSION=$(jq '.EngineAssociation' $UPROJECT_FILE)
+
+          echo "Generating development environment variables..."
+          make dev ue=$UE_VERSION version=dev env=development target_platform=Win64
+          make env-inject
+
+      - name: Build
+        run: |
+          echo "Building ${{ github.event.inputs.stream }}..."
+          make build
+
+      # - name: Configure AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v1
+      #   with:
+      #     aws-access-key-id: ${{ secrets.aws_access_key_id }}
+      #     aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
+      #     aws-region: eu-central-1
