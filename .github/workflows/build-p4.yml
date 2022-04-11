@@ -93,7 +93,12 @@ jobs:
           mv gha-p4/${{ inputs.depot }}/${{ inputs.stream }}/${{ inputs.stream }} src/
           cp -r boilerplate-project/bin .
           cp -r boilerplate-project/Makefile .
-          echo "name: ${{ inputs.stream }}" >> config.yml
+          
+          if [ ! -f src/config.yml ]; then
+            echo "name: ${{ inputs.stream }}" >> config.yml
+          else
+            cp src/config.yml .
+          fi
 
       - name: Environment Variables
         run: |
