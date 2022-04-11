@@ -3,6 +3,14 @@ name: P4 Build
 on:
   workflow_call:
     secrets:
+      token:
+        required: true
+      aws_access_key_id:
+        required: true
+      aws_secret_access_key:
+        required: true
+      slack_webhook_cicd:
+        required: true
       depot:
         required: true
       stream:
