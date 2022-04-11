@@ -76,7 +76,7 @@ jobs:
             SubmitOptions:	leaveunchanged
             LineEnd:	local
             View:
-              //${{ github.event.inputs.depot }}/${{ github.event.inputs.stream }}/... //gha-p4/${{ github.event.inputs.depot }}/${{ github.event.inputs.stream }}/...
+              //${{ inputs.depot }}/${{ inputs.stream }}/... //gha-p4/${{ inputs.depot }}/${{ inputs.stream }}/...
 
       - name: P4 Sync
         uses: perforce/setup-p4@v1
@@ -90,15 +90,15 @@ jobs:
         run: |
           echo "Approximating boilerplate project repo layout..."
           mkdir src
-          mv gha-p4/${{ github.event.inputs.depot }}/${{ github.event.inputs.stream }}/${{ github.event.inputs.stream }} src/
+          mv gha-p4/${{ inputs.depot }}/${{ inputs.stream }}/${{ inputs.stream }} src/
           cp -r boilerplate-project/bin .
           cp -r boilerplate-project/Makefile .
-          echo "name: ${{ github.event.inputs.stream }}" >> config.yml
+          echo "name: ${{ inputs.stream }}" >> config.yml
 
       - name: Environment Variables
         run: |
           echo "Retrieving intended engine version from the .uproject file..."
-          UPROJECT_FILE=`ls -1 src/${{ github.event.inputs.stream }}/*.uproject | head -n 1`
+          UPROJECT_FILE=`ls -1 src/${{ inputs.stream }}/*.uproject | head -n 1`
           UE_VERSION=$(jq '.EngineAssociation' $UPROJECT_FILE)
 
           echo "Generating development environment variables..."
@@ -107,7 +107,7 @@ jobs:
 
       - name: Build
         run: |
-          echo "Building ${{ github.event.inputs.stream }}..."
+          echo "Building ${{ inputs.stream }}..."
           make build
 
       # - name: Configure AWS credentials
