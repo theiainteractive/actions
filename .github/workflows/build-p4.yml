@@ -11,15 +11,18 @@ on:
         required: true
       slack_webhook_cicd:
         required: true
-      depot:
-        required: true
-      stream:
-        required: true
       p4user:
         required: true
       p4passwd:
         required: true
       p4port:
+        required: true
+    inputs:
+      depot:
+        type: string
+        required: true
+      stream:
+        type: string
         required: true
 
 defaults:
