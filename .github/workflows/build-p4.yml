@@ -15,6 +15,12 @@ on:
         required: true
       stream:
         required: true
+      p4user:
+        required: true
+      p4passwd:
+        required: true
+      p4port:
+        required: true
 
 defaults:
   run:
@@ -24,18 +30,18 @@ jobs:
   build-p4:
     runs-on: windows-10
     env:
-      P4PORT:    ${{ secrets.P4PORT }}
-      P4USER:    ${{ secrets.P4USER }}
+      P4PORT:    ${{ secrets.p4port }}
+      P4USER:    ${{ secrets.p4user }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          token: ${{ secrets.REPO_SCOPED_TOKEN }}
+          token: ${{ secrets.token }}
 
       - name: Checkout Boilerplate Project Code (Build scripts)
         uses: actions/checkout@v2
         with:
-          token: ${{ secrets.REPO_SCOPED_TOKEN }}
+          token: ${{ secrets.token }}
           repository: theiainteractive/boilerplate-project
           path: boilerplate-project
 
@@ -50,7 +56,7 @@ jobs:
         with:
           command: login
         env:
-          P4PASSWD:  ${{ secrets.P4PASSWD }}
+          P4PASSWD:  ${{ secrets.p4passwd }}
 
       - name: P4 Client Workspace
         uses: perforce/setup-p4@v1
@@ -59,9 +65,9 @@ jobs:
           arguments: -i
           spec: |
             Client:	gha-p4
-            Owner:	${{ secrets.P4USER }}
+            Owner:	${{ secrets.p4user }}
             Description:
-              Created by ${{ secrets.P4USER }}.
+              Created by ${{ secrets.p4user }}.
             Root:	gha-p4
             Options:	noallwrite noclobber nocompress unlocked modtime rmdir
             SubmitOptions:	leaveunchanged
