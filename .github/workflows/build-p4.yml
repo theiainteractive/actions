@@ -1,29 +1,11 @@
 name: P4 Build
 
 on:
-  repository_dispatch:
-    types: [perforce-trigger]
-    inputs:
+  workflow_call:
+    secrets:
       depot:
-        type: string
-        description: The P4 depot to look in
         required: true
       stream:
-        type: string
-        description: The stream to look in
-        required: true
-
-  workflow_dispatch:
-    inputs:
-      depot:
-        type: string
-        description: The P4 depot to look in
-        default: streamsDepot
-        required: true
-      stream:
-        type: string
-        description: The stream to look in
-        default: mainline
         required: true
 
 defaults:
@@ -77,7 +59,7 @@ jobs:
             SubmitOptions:	leaveunchanged
             LineEnd:	local
             View:
-              //${{ github.event.inputs.depot }}/${{ github.event.inputs.stream }}/... //gha-p4/${{ github.event.inputs.depot }}/${{ github.event.inputs.stream }}/...
+              //${{ secrets.depot }}/${{ secrets.stream }}/... //gha-p4/${{ secrets.depot }}/${{ secrets.stream }}/...
 
       - name: P4 Sync
         uses: perforce/setup-p4@v1
@@ -91,15 +73,15 @@ jobs:
         run: |
           echo "Approximating boilerplate project repo layout..."
           mkdir src
-          mv gha-p4/${{ github.event.inputs.depot }}/${{ github.event.inputs.stream }}/${{ github.event.inputs.stream }} src/
+          mv gha-p4/${{ secrets.depot }}/${{ secrets.stream }}/${{ secrets.stream }} src/
           cp -r boilerplate-project/bin .
           cp -r boilerplate-project/Makefile .
-          echo "name: ${{ github.event.inputs.stream }}" >> config.yml
+          echo "name: ${{ secrets.stream }}" >> config.yml
 
       - name: Environment Variables
         run: |
           echo "Retrieving intended engine version from the .uproject file..."
-          UPROJECT_FILE=`ls -1 src/${{ github.event.inputs.stream }}/*.uproject | head -n 1`
+          UPROJECT_FILE=`ls -1 src/${{ secrets.stream }}/*.uproject | head -n 1`
           UE_VERSION=$(jq '.EngineAssociation' $UPROJECT_FILE)
 
           echo "Generating development environment variables..."
@@ -108,7 +90,7 @@ jobs:
 
       - name: Build
         run: |
-          echo "Building ${{ github.event.inputs.stream }}..."
+          echo "Building ${{ secrets.stream }}..."
           make build
 
       # - name: Configure AWS credentials
