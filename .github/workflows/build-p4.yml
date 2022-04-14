@@ -90,7 +90,7 @@ jobs:
         run: |
           echo "Approximating boilerplate project repo layout..."
           mkdir src
-          mv gha-p4 src/
+          mv gha-p4/${{ inputs.stream }} src/
           cp -r boilerplate-project/bin .
           cp -r boilerplate-project/Makefile .
 
