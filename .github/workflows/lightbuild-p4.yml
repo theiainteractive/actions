@@ -110,14 +110,10 @@ jobs:
           make dev ue=$UE_VERSION version=dev env=development target_platform=Win64
           make env-inject
 
-      - name: Build
+      - name: Build Lighting
         run: |
-          echo "Building ${{ inputs.stream }}..."
-          make build
-
-      # - name: Configure AWS credentials
-      #   uses: aws-actions/configure-aws-credentials@v1
-      #   with:
-      #     aws-access-key-id: ${{ secrets.aws_access_key_id }}
-      #     aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
-      #     aws-region: eu-central-1
+          echo "Building Lights/NavMesh/Etc for ${{ inputs.stream }}..."
+          pushd src/${{ inputs.stream }}
+            ue4 setroot ${{ env.UE_ROOT }}
+            ue4 uat RebuildLightmaps -allmaps
+          popd
