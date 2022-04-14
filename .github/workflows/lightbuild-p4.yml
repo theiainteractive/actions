@@ -1,4 +1,4 @@
-name: P4 Build
+name: P4 Lightbuild
 
 on:
   workflow_call:
