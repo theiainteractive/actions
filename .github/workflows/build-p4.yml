@@ -14,7 +14,7 @@ defaults:
 
 jobs:
   build-p4:
-    runs-on: windows-10
+    runs-on: windows-10-strong
     env:
       P4PORT:    ${{ secrets.P4PORT }}
       P4USER:    ${{ secrets.P4USER }}
