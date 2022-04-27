@@ -87,6 +87,11 @@ jobs:
           echo "Generating development environment variables..."
           make dev ue=$UE_VERSION version=dev env=development target_platform=Win64
           make env-inject
+      
+      - name: Ensure No Int/Bin in Project Plugins
+        run: |
+          rm -rf src/*/Plugins/*/Intermediate
+          rm -rf src/*/Plugins/*/Binaries
 
       - name: Build
         run: |
