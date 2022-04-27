@@ -114,6 +114,11 @@ jobs:
         run: |
           echo "Building ${{ inputs.stream }}..."
           make build
+      
+      - name: Ensure No Int/Bin in Project Plugins
+        run: |
+          rm -rf src/${{ secrets.stream }}/Plugins/*/Intermediate
+          rm -rf src/${{ secrets.stream }}/Plugins/*/Binaries
 
       # - name: Configure AWS credentials
       #   uses: aws-actions/configure-aws-credentials@v1
