@@ -90,8 +90,6 @@ jobs:
       
       - name: Ensure No Int/Bin in Project Plugins
         run: |
-          echo "Showing plugins content..."
-          ls -al src/${{ secrets.stream }}/Plugins/*/
           rm -rf src/${{ secrets.stream }}/Plugins/*/Intermediate
           rm -rf src/${{ secrets.stream }}/Plugins/*/Binaries
 
