@@ -117,8 +117,12 @@ jobs:
       
       - name: Ensure No Int/Bin in Project Plugins
         run: |
-          rm -rf src/${{ secrets.stream }}/Plugins/*/Intermediate
-          rm -rf src/${{ secrets.stream }}/Plugins/*/Binaries
+          pushd src/${{ secrets.stream }}/Plugins
+            for DIR in */; do
+              rm -rf $DIR/Intermediate
+              rm -rf $DIR/Binaries
+            done
+          popd
 
       # - name: Configure AWS credentials
       #   uses: aws-actions/configure-aws-credentials@v1
