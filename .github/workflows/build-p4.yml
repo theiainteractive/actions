@@ -110,19 +110,19 @@ jobs:
           make dev ue=$UE_VERSION version=dev env=development target_platform=Win64
           make env-inject
 
-      - name: Build
-        run: |
-          echo "Building ${{ inputs.stream }}..."
-          make build
-      
       - name: Ensure No Int/Bin in Project Plugins
         run: |
-          pushd src/${{ secrets.stream }}/Plugins
+          pushd src/${{ inputs.stream }}/Plugins
             for DIR in */; do
               rm -rf $DIR/Intermediate
               rm -rf $DIR/Binaries
             done
           popd
+
+      - name: Build
+        run: |
+          echo "Building ${{ inputs.stream }}..."
+          make build
 
       # - name: Configure AWS credentials
       #   uses: aws-actions/configure-aws-credentials@v1
