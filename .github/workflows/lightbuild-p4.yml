@@ -113,7 +113,5 @@ jobs:
       - name: Build Lighting
         run: |
           echo "Building Lights/NavMesh/Etc for ${{ inputs.stream }}..."
-          pushd src/${{ inputs.stream }}
-            ue4 setroot ${{ env.UE_ROOT }}
-            ue4 uat RebuildLightmaps 
-          popd
+            
+          ue4 uat RebuildLightmaps 
