@@ -72,8 +72,8 @@ jobs:
             Description:
               Created by ${{ secrets.p4user }}.
             Root:	gha-p4
-            Options:	noallwrite noclobber nocompress unlocked modtime rmdir
-            SubmitOptions:	leaveunchanged
+            Options:	allwrite noclobber nocompress unlocked modtime rmdir
+            SubmitOptions:	revertunchanged
             LineEnd:	local
             View:
               //${{ inputs.depot }}/${{ inputs.stream }}/... //gha-p4/...
