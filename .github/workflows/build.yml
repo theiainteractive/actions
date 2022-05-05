@@ -171,13 +171,15 @@ jobs:
           HAS_DEPENDENCIES=false
           PLUGIN_TMP_DIR=$(mktemp -d ${{ env.PLUGIN_TMP_DIR_PREFIX }}.XXXXXX)
 
-          while read S3_URL NAME; do
+          while read S3_URL NAME PLUGIN_TYPE; do
               aws s3 cp "$S3_URL/$NAME-ue${{ steps.inject.outputs.VERSION_UE }}-${{ steps.inject.outputs.PLATFORM_UE }}-latest.zip" $PLUGIN_TMP_DIR
+              PLUGIN_TYPE_FOLDER=$PLUGIN_TYPE
               HAS_DEPENDENCIES=true
-          done <<< $(yq -r ".build_settings.dependencies[] | [.s3, .name] | @tsv" config.yml)
+          done <<< $(yq -r ".build_settings.dependencies[] | [.s3, .name, .plugin_type] | @tsv" config.yml)
 
           echo "::set-output name=pluginsdir::$PLUGIN_TMP_DIR"
           echo "::set-output name=dependencies_exist::$HAS_DEPENDENCIES"
+          echo "::set-output name=plugin_type_folder::$PLUGIN_TYPE_FOLDER"
 
       - name: Extract Dependencies
         if: steps.dependencies.outputs.dependencies_exist=='true'
@@ -197,7 +199,10 @@ jobs:
       - name: Move Dependencies to Engine Plugin Directory
         if: steps.dependencies.outputs.dependencies_exist=='true'
         run: |
-          EDITOR_PLUGIN_DIR="${{ steps.inject.outputs.UE_ROOT }}/Engine/Plugins/Editor"
+          EDITOR_PLUGIN_DIR="${{ steps.inject.outputs.UE_ROOT }}/Engine/Plugins/${{ steps.dependencies.outputs.plugin_type_folder }}"
+          if [ ! -d "$EDITOR_PLUGIN_DIR" ]; then
+            mkdir -p "$EDITOR_PLUGIN_DIR"
+          fi
           mv "${{ steps.dependencies.outputs.pluginsdir }}" "$EDITOR_PLUGIN_DIR"
 
       - name: Build
@@ -235,7 +240,7 @@ jobs:
       - name: Cleanup Engine Plugin Directory
         if: always()
         run: |
-          EDITOR_PLUGIN_DIR="${{ steps.inject.outputs.UE_ROOT }}/Engine/Plugins/Editor"
+          EDITOR_PLUGIN_DIR="${{ steps.inject.outputs.UE_ROOT }}/Engine/Plugins/${{ steps.dependencies.outputs.plugin_type_folder }}"
           EDITOR_PLUGIN_DIR="$(echo $EDITOR_PLUGIN_DIR | sed 's/\\/\//g')"
           rm -rf "$EDITOR_PLUGIN_DIR/"${{ env.PLUGIN_TMP_DIR_PREFIX }}.*
 
