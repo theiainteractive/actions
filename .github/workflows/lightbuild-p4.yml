@@ -117,5 +117,18 @@ jobs:
           QUALITY=Production
           FLAGS="-Run=ResavePackages -IgnoreChangeList -BuildLighting -Quality=$QUALITY -MapsOnly -ProjectOnly -AllowCommandletRendering"
           for PROJ in gha-p4/${{ inputs.stream }}/*.uproject; do
-            "/c/Program Files/Epic Games/UE_4.27/Engine/Binaries/Win64/UE4Editor-Cmd.exe" $(pwd)/$PROJ $FLAGS
+            PROJ_PATH="$(pwd)/$PROJ"
+            break
+          done
+
+          echo "Generating lightbuild map list..."
+          MAP_ARRAY=()
+          while read map; do
+            echo "  - $map"
+            MAP_ARRAY+=("$map")
+          done <<< $(yq -r ".build_settings.lightbuild.maps[]" gha-p4/${{ inputs.stream }}/config.yml)
+
+          echo "Building lighting..."
+          for map in "${MAP_ARRAY[@]}"; do
+            "/c/Program Files/Epic Games/UE_4.27/Engine/Binaries/Win64/UE4Editor-Cmd.exe" "$PROJ_PATH" $FLAGS -Map=$map
           done
