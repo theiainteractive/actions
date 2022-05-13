@@ -122,7 +122,7 @@ jobs:
 
           QUALITY=Production
           FLAGS="-Run=ResavePackages -IgnoreChangeList -BuildLighting -Quality=$QUALITY -MapsOnly -ProjectOnly -AllowCommandletRendering"
-          for PROJ in gha-p4/${{ inputs.stream }}/*.uproject; do
+          for PROJ in gha-p4/*/*.uproject; do
             PROJ_PATH="$(pwd)/$PROJ"
             break
           done
