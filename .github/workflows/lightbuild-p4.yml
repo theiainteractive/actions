@@ -90,7 +90,7 @@ jobs:
           P4CLIENT: gha-p4
         with:
           command: sync
-          arguments: -q
+          arguments: -q -f
 
       # - name: Approximate Boilerplate Project Layout
       #   run: |
