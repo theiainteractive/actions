@@ -78,13 +78,19 @@ jobs:
             View:
               //${{ inputs.depot }}/${{ inputs.stream }}/... //gha-p4/...
 
+      # - name: Migrate From Local Artifactory
+      #   run: |
+      #     if [ -d "/c/${{ inputs.depot }}/${{ inputs.stream }}" ]; then
+      #       mv /c/${{ inputs.depot }}/${{ inputs.stream }} /gha-p4/${{ inputs.stream }}
+      #     fi
+
       - name: P4 Sync
         uses: perforce/setup-p4@v1
         env:
           P4CLIENT: gha-p4
         with:
           command: sync
-          arguments: -f
+          arguments: -q
 
       # - name: Approximate Boilerplate Project Layout
       #   run: |
@@ -126,7 +132,7 @@ jobs:
           while read map; do
             echo "  - $map"
             MAP_ARRAY+=("$map")
-          done <<< $(yq -r ".build_settings.lightbuild.maps[]" gha-p4/${{ inputs.stream }}/config.yml)
+          done <<< $(yq -r ".build_settings.lightbuild.maps[]" gha-p4/config.yml)
 
           echo "Building lighting..."
           for map in "${MAP_ARRAY[@]}"; do
