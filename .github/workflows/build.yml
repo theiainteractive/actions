@@ -362,6 +362,7 @@ jobs:
 
       - name: Assemble Clean Release Asset
         run: |
+          rm -rf src/HostProject
           cp -R src/* ${{ steps.inject.outputs.PACKAGE_NAME }}
           cp lib/config/${{ matrix.ue_version }}/* ${{ steps.inject.outputs.PACKAGE_NAME }}/
           cp VERSION ${{ steps.inject.outputs.PACKAGE_NAME }}/
