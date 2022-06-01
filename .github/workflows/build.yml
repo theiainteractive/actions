@@ -190,8 +190,12 @@ jobs:
                   7z x -y "$ZIP"
                   rm $ZIP
               else
+                  
                   unzip "$ZIP"
                   rm $ZIP
+                  if [[ "$ZIP" == *"WidgetStudio"* ]]; then
+                    ls -al WidgetStudio/Binaries/Mac/
+                  fi
               fi
             done
           popd
