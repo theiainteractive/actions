@@ -190,12 +190,8 @@ jobs:
                   7z x -y "$ZIP"
                   rm $ZIP
               else
-                  
                   unzip "$ZIP"
                   rm $ZIP
-                  if [[ "$ZIP" == *"WidgetStudio"* ]]; then
-                    ls -al WidgetStudio/Binaries/Mac/
-                  fi
               fi
             done
           popd
@@ -246,7 +242,7 @@ jobs:
         run: |
           EDITOR_PLUGIN_DIR="${{ steps.inject.outputs.UE_ROOT }}/Engine/Plugins/${{ steps.dependencies.outputs.plugin_type_folder }}"
           EDITOR_PLUGIN_DIR="$(echo $EDITOR_PLUGIN_DIR | sed 's/\\/\//g')"
-          rm -rf "$EDITOR_PLUGIN_DIR/"${{ env.PLUGIN_TMP_DIR_PREFIX }}.*
+          rm -rf "$EDITOR_PLUGIN_DIR/"${{ env.PLUGIN_TMP_DIR_PREFIX }}-*
 
       - uses: act10ns/slack@v1
         if: always()
