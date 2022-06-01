@@ -169,7 +169,7 @@ jobs:
           aws configure set default.s3.multipart_threshold 300MB
 
           HAS_DEPENDENCIES=false
-          PLUGIN_TMP_DIR=$(mktemp -d ${{ env.PLUGIN_TMP_DIR_PREFIX }}.XXXXXX)
+          PLUGIN_TMP_DIR=$(mktemp -d ${{ env.PLUGIN_TMP_DIR_PREFIX }}-XXXXXX)
 
           while read S3_URL NAME PLUGIN_TYPE; do
               aws s3 cp "$S3_URL/$NAME-ue${{ steps.inject.outputs.VERSION_UE }}-${{ steps.inject.outputs.PLATFORM_UE }}-latest.zip" $PLUGIN_TMP_DIR
