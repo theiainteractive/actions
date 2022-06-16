@@ -141,3 +141,15 @@ jobs:
           for map in "${MAP_ARRAY[@]}"; do
             "${{ env.UE_CMDLET_PATH }}" "$PROJ_PATH" $FLAGS -Map=$map
           done
+
+      - name: P4 Diff
+        uses: perforce/setup-p4@v1
+        env:
+          P4CLIENT: gha-p4
+        run: p4 diff -f -sa
+
+      - name: P4 Diff Into Edit
+        uses: perforce/setup-p4@v1
+        env:
+          P4CLIENT: gha-p4
+        run: p4 diff -f -sa | p4 -x - edit
