@@ -29,6 +29,9 @@ defaults:
   run:
     shell: bash
 
+env:
+  UE_CMDLET_PATH: "/c/Epic Games/UE_4.27/Engine/Binaries/Win64/UE4Editor-Cmd.exe"
+
 jobs:
   build-p4:
     runs-on: windows-10-strong
@@ -136,5 +139,5 @@ jobs:
 
           echo "Building lighting..."
           for map in "${MAP_ARRAY[@]}"; do
-            "/c/Program Files/Epic Games/UE_4.27/Engine/Binaries/Win64/UE4Editor-Cmd.exe" "$PROJ_PATH" $FLAGS -Map=$map
+            "${{ env.UE_CMDLET_PATH }}" "$PROJ_PATH" $FLAGS -Map=$map
           done
