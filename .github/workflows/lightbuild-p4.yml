@@ -78,14 +78,9 @@ jobs:
             Options:	allwrite noclobber nocompress unlocked modtime rmdir
             SubmitOptions:	revertunchanged
             LineEnd:	local
+            Stream: //${{ inputs.depot }}/${{ inputs.stream }}
             View:
               //${{ inputs.depot }}/${{ inputs.stream }}/... //gha-p4/...
-
-      # - name: Migrate From Local Artifactory
-      #   run: |
-      #     if [ -d "/c/${{ inputs.depot }}/${{ inputs.stream }}" ]; then
-      #       mv /c/${{ inputs.depot }}/${{ inputs.stream }} /gha-p4/${{ inputs.stream }}
-      #     fi
 
       - name: P4 Sync
         uses: perforce/setup-p4@v1
@@ -94,30 +89,6 @@ jobs:
         with:
           command: sync
           arguments: -q -f
-
-      # - name: Approximate Boilerplate Project Layout
-      #   run: |
-      #     echo "Approximating boilerplate project repo layout..."
-      #     mkdir src
-      #     mv gha-p4/${{ inputs.stream }} src/
-      #     cp -r boilerplate-project/bin .
-      #     cp -r boilerplate-project/Makefile .
-
-      #     if [ ! -f src/config.yml ]; then
-      #       echo "name: ${{ inputs.stream }}" >> config.yml
-      #     else
-      #       cp src/config.yml .
-      #     fi
-
-      # - name: Environment Variables
-      #   run: |
-      #     echo "Retrieving intended engine version from the .uproject file..."
-      #     UPROJECT_FILE=`ls -1 src/${{ inputs.stream }}/*.uproject | head -n 1`
-      #     UE_VERSION=$(jq '.EngineAssociation' $UPROJECT_FILE)
-
-      #     echo "Generating development environment variables..."
-      #     make dev ue=$UE_VERSION version=dev env=development target_platform=Win64
-      #     make env-inject
 
       - name: Build Lighting
         run: |
@@ -153,3 +124,9 @@ jobs:
         env:
           P4CLIENT: gha-p4
         run: p4 diff -f -sa | p4 -x - edit
+      
+      # - name: P4 Submit
+      #   uses: perforce/setup-p4@v1
+      #   env:
+      #     P4CLIENT: gha-p4
+      #   run: p4 submit -d "Automated Lightbuild from GitHub Actions"
