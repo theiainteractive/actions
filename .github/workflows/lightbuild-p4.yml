@@ -125,8 +125,8 @@ jobs:
           P4CLIENT: gha-p4
         run: p4 diff -f -sa | p4 -x - edit
       
-      # - name: P4 Submit
-      #   uses: perforce/setup-p4@v1
-      #   env:
-      #     P4CLIENT: gha-p4
-      #   run: p4 submit -d "Automated Lightbuild from GitHub Actions"
+      - name: P4 Submit
+        uses: perforce/setup-p4@v1
+        env:
+          P4CLIENT: gha-p4
+        run: p4 submit -d "Automated Lightbuild from GitHub Actions"
