@@ -113,20 +113,9 @@ jobs:
             "${{ env.UE_CMDLET_PATH }}" "$PROJ_PATH" $FLAGS -Map=$map
           done
 
-      - name: P4 Diff
-        uses: perforce/setup-p4@v1
-        env:
-          P4CLIENT: gha-p4
-        run: p4 diff -f -sa
-
-      - name: P4 Diff Into Edit
-        uses: perforce/setup-p4@v1
-        env:
-          P4CLIENT: gha-p4
-        run: p4 diff -f -sa | p4 -x - edit
-      
-      - name: P4 Submit
-        uses: perforce/setup-p4@v1
-        env:
-          P4CLIENT: gha-p4
-        run: p4 submit -d "Automated Lightbuild from GitHub Actions"
+      - name: P4 Submit Changes
+        with:
+          run: |
+            export P4CLIENT="gha-p4"
+            p4 diff -f -sa | p4 -x - edit || exit 1
+            p4 submit -d "Automated Lightbuild from GitHub Actions" || exit 2
