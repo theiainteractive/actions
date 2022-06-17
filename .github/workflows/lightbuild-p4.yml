@@ -44,13 +44,6 @@ jobs:
         with:
           token: ${{ secrets.token }}
 
-      - name: Checkout Boilerplate Project Code (Build scripts)
-        uses: actions/checkout@v2
-        with:
-          token: ${{ secrets.token }}
-          repository: theiainteractive/boilerplate-project
-          path: boilerplate-project
-
       - name: P4 Trust
         uses: perforce/setup-p4@v1
         with:
