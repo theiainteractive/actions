@@ -114,8 +114,7 @@ jobs:
           done
 
       - name: P4 Submit Changes
-        with:
-          run: |
-            export P4CLIENT="gha-p4"
-            p4 diff -f -sa | p4 -x - edit || exit 1
-            p4 submit -d "Automated Lightbuild from GitHub Actions" || exit 2
+        run: |
+          export P4CLIENT="gha-p4"
+          p4 diff -f -sa | p4 -x - edit || exit 1
+          p4 submit -d "Automated Lightbuild from GitHub Actions" || exit 2
