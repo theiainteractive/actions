@@ -31,6 +31,7 @@ jobs:
       notes:          ${{ steps.releaseNotes.outputs.notes }}
       matrix:         ${{ steps.generateMatrix.outputs.matrix }}
       matrix_clean:   ${{ steps.generateMatrixClean.outputs.matrix_clean }}
+      release_clean:  ${{ steps.releaseClean.outputs.release_clean }}
       upload_github:  ${{ steps.assetUploadTargets.outputs.github }}
       upload_s3:      ${{ steps.assetUploadTargets.outputs.s3 }}
     steps:
@@ -101,14 +102,19 @@ jobs:
         id: generateMatrixClean
         if: steps.releaseCheck.outputs.type=='release'
         run: |
-          while read ue_version experimental; do
-            ue_version=$(echo $ue_version | xargs)
-            experimental=$(echo $experimental | xargs)
-            ENTRIES="$ENTRIES{\"ue_version\": \"$ue_version\", \"experimental\": \"$experimental\"},"
-          done <<< $(yq -r ".envs.production.matrix_clean[] | [.ue_version, .experimental] | @tsv" config.yml)
+          if [[ "$(yq -r ".envs.production.matrix_clean" config.yml)" != "null" ]]; then
+            while read ue_version experimental; do
+              ue_version=$(echo $ue_version | xargs)
+              experimental=$(echo $experimental | xargs)
+              ENTRIES="$ENTRIES{\"ue_version\": \"$ue_version\", \"experimental\": \"$experimental\"},"
+            done <<< $(yq -r ".envs.production.matrix_clean[] | [.ue_version, .experimental] | @tsv" config.yml)
+            echo "::set-output name=release_clean::true"
+          else
+            echo "::set-output name=release_clean::false"
+          fi
           echo ::set-output name=matrix_clean::{\"include\":[$ENTRIES]}
           echo "{\"include\":[$ENTRIES]}"
-      
+
       - name: Asset Upload Targets
         id: assetUploadTargets
         run: |
@@ -165,21 +171,20 @@ jobs:
       - name: Coalesce Dependencies
         id: dependencies
         run: |
-          aws configure set default.s3.use_accelerate_endpoint true
-          aws configure set default.s3.multipart_threshold 300MB
-
-          HAS_DEPENDENCIES=false
-          PLUGIN_TMP_DIR=$(mktemp -d ${{ env.PLUGIN_TMP_DIR_PREFIX }}-XXXXXX)
-
-          while read S3_URL NAME PLUGIN_TYPE; do
-              aws s3 cp "$S3_URL/$NAME-ue${{ steps.inject.outputs.VERSION_UE }}-${{ steps.inject.outputs.PLATFORM_UE }}-latest.zip" $PLUGIN_TMP_DIR
-              PLUGIN_TYPE_FOLDER=$PLUGIN_TYPE
-              HAS_DEPENDENCIES=true
-          done <<< $(yq -r ".build_settings.dependencies[] | [.s3, .name, .plugin_type] | @tsv" config.yml)
-
-          echo "::set-output name=pluginsdir::$PLUGIN_TMP_DIR"
-          echo "::set-output name=dependencies_exist::$HAS_DEPENDENCIES"
-          echo "::set-output name=plugin_type_folder::$PLUGIN_TYPE_FOLDER"
+          if [[ "$(yq -r ".build_settings.dependencies" config.yml)" != "null" ]]; then
+            aws configure set default.s3.use_accelerate_endpoint true
+            aws configure set default.s3.multipart_threshold 300MB
+            while read S3_URL NAME PLUGIN_TYPE; do
+                aws s3 cp "$S3_URL/$NAME-ue${{ steps.inject.outputs.VERSION_UE }}-${{ steps.inject.outputs.PLATFORM_UE }}-latest.zip" $PLUGIN_TMP_DIR
+                PLUGIN_TYPE_FOLDER=$PLUGIN_TYPE
+            done <<< $(yq -r ".build_settings.dependencies[] | [.s3, .name, .plugin_type] | @tsv" config.yml)
+            PLUGIN_TMP_DIR=$(mktemp -d ${{ env.PLUGIN_TMP_DIR_PREFIX }}-XXXXXX)
+            echo "::set-output name=pluginsdir::$PLUGIN_TMP_DIR"
+            echo "::set-output name=dependencies_exist::true"
+            echo "::set-output name=plugin_type_folder::$PLUGIN_TYPE_FOLDER"
+          else
+            echo "::set-output name=dependencies_exist::false"
+          fi
 
       - name: Extract Dependencies
         if: steps.dependencies.outputs.dependencies_exist=='true'
@@ -344,7 +349,7 @@ jobs:
     name: Upload Clean Asset UE${{ matrix.ue_version }}
     runs-on: windows-10
     needs: [meta, release]
-    if: needs.meta.outputs.type=='release' && inputs.upload_assets.github=='true'
+    if: needs.meta.outputs.type=='release' && inputs.upload_assets.github=='true' && needs.meta.outputs.release_clean=='true'
     continue-on-error: ${{ matrix.experimental == 'true' }}
     strategy:
       matrix: ${{ fromJson(needs.meta.outputs.matrix_clean) }}
