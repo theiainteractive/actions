@@ -119,7 +119,7 @@ jobs:
         id: assetUploadTargets
         run: |
           echo ::set-output name=github::$(yq -r .build_settings.upload_assets.github config.yml)
-          echo ::set-output name=s3::$(yq -r .build_settings.upload_assets.s3 config.yml)
+          echo ::set-output name=s3::$(yq -r .build_settings.upload_assets.aws config.yml)
 
       - name: Extract Slack Notification Data
         id: slack
@@ -216,14 +216,6 @@ jobs:
       - name: Run Tests
         if: matrix.test=='true'
         run: make test nobuild=true 
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        if: needs.meta.outputs.upload_s3=='true'
-        with:
-          aws-access-key-id: ${{ secrets.aws_access_key_id }}
-          aws-secret-access-key: ${{ secrets.aws_secret_access_key }}
-          aws-region: eu-central-1
 
       - name: Deploy Artifact
         if: needs.meta.outputs.upload_s3=='true'
