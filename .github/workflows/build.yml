@@ -50,7 +50,7 @@ jobs:
                 && "${{ github.event_name }}" != "pull_request" ) ]]
           then
             echo "Setting output to release"
-            echo type=release" >> $GITHUB_OUTPUT
+            echo "type=release" >> $GITHUB_OUTPUT
           else
             echo "Setting output to build"
             echo "type=build" >> $GITHUB_OUTPUT
