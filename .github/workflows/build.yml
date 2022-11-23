@@ -50,10 +50,10 @@ jobs:
                 && "${{ github.event_name }}" != "pull_request" ) ]]
           then
             echo "Setting output to release"
-            echo '::set-output name=type::release'
+            echo type=release" >> $GITHUB_OUTPUT
           else
             echo "Setting output to build"
-            echo '::set-output name=type::build'
+            echo "type=build" >> $GITHUB_OUTPUT
           fi
 
       - name: Read Release Version
@@ -61,9 +61,9 @@ jobs:
         id: releaseVersion
         run: |
           if [[ ! -z "${{ github.event.inputs.version }}" ]]; then
-            echo '::set-output name=version::${{ github.event.inputs.version }}'
+            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT"
           else
-            echo "::set-output name=version::$(head -1 VERSION | xargs)"
+            echo "version=$(head -1 VERSION | xargs)" >> $GITHUB_OUTPUT
           fi
 
       - name: Read Release Notes
@@ -75,7 +75,7 @@ jobs:
           RELEASE="${RELEASE//'%'/'%25'}"
           RELEASE="${RELEASE//$'\n'/'%0A'}"
           RELEASE="${RELEASE//$'\r'/'%0D'}"
-          echo "::set-output name=notes::$RELEASE"
+          echo "notes=$RELEASE" >> $GITHUB_OUTPUT
 
       - name: Generate Build Version
         if: steps.releaseCheck.outputs.type!='release'
@@ -96,7 +96,7 @@ jobs:
             test=$(echo $test | xargs)
             ENTRIES="$ENTRIES{\"ue_version\": \"$ue_version\", \"host_platform\": \"$host_platform\", \"target_platform\": \"$target_platform\", \"experimental\": \"$experimental\", \"test\": \"$test\"},"
           done <<< $(yq -r ".envs.$ENVIRONMENT.matrix[] | [.ue_version, .target_platform, .host_platform, .experimental, .test] | @tsv" config.yml)
-          echo ::set-output name=matrix::{\"include\":[$ENTRIES]}
+          echo "matrix={\"include\":[$ENTRIES]}" >> $GITHUB_OUTPUT
 
       - name: Setup Clean Release Asset Matrix
         id: generateMatrixClean
@@ -108,24 +108,24 @@ jobs:
               experimental=$(echo $experimental | xargs)
               ENTRIES="$ENTRIES{\"ue_version\": \"$ue_version\", \"experimental\": \"$experimental\"},"
             done <<< $(yq -r ".envs.production.matrix_clean[] | [.ue_version, .experimental] | @tsv" config.yml)
-            echo "::set-output name=release_clean::true"
+            echo "release_clean=true"
           else
-            echo "::set-output name=release_clean::false"
+            echo "release_clean=false"
           fi
-          echo ::set-output name=matrix_clean::{\"include\":[$ENTRIES]}
+          echo "matrix_clean={\"include\":[$ENTRIES]}" >> $GITHUB_OUTPUT
           echo "{\"include\":[$ENTRIES]}"
 
       - name: Asset Upload Targets
         id: assetUploadTargets
         run: |
-          echo ::set-output name=github::$(yq -r .build_settings.upload_assets.github config.yml)
-          echo ::set-output name=s3::$(yq -r .build_settings.upload_assets.aws config.yml)
+          echo "github=$(yq -r .build_settings.upload_assets.github config.yml)" >> $GITHUB_OUTPUT
+          echo "s3=$(yq -r .build_settings.upload_assets.aws config.yml)" >> $GITHUB_OUTPUT
 
       - name: Extract Slack Notification Data
         id: slack
         run: |
-          echo "::set-output name=branch::$(echo ${GITHUB_REF#refs/heads/})"
-          echo "::set-output name=commit::$(git rev-parse --short=8 HEAD)"
+          echo "branch=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_OUTPUT
+          echo "commit=$(git rev-parse --short=8 HEAD)" >> $GITHUB_OUTPUT
 
       - uses: act10ns/slack@v1
         if: always()
@@ -179,11 +179,11 @@ jobs:
                 PLUGIN_TYPE_FOLDER=$PLUGIN_TYPE
             done <<< $(yq -r ".build_settings.dependencies[] | [.s3, .name, .plugin_type] | @tsv" config.yml)
             PLUGIN_TMP_DIR=$(mktemp -d ${{ env.PLUGIN_TMP_DIR_PREFIX }}-XXXXXX)
-            echo "::set-output name=pluginsdir::$PLUGIN_TMP_DIR"
-            echo "::set-output name=dependencies_exist::true"
-            echo "::set-output name=plugin_type_folder::$PLUGIN_TYPE_FOLDER"
+            echo "pluginsdir=$PLUGIN_TMP_DIR" >> $GITHUB_OUTPUT
+            echo "dependencies_exist=true" >> $GITHUB_OUTPUT
+            echo "plugin_type_folder=$PLUGIN_TYPE_FOLDER" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=dependencies_exist::false"
+            echo "dependencies_exist=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Extract Dependencies
