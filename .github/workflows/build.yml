@@ -79,9 +79,9 @@ jobs:
       - name: Generate Build Version
         if: steps.releaseCheck.outputs.type!='release'
         id: buildVersion
-        uses: paulhatch/semantic-version@v4.0.2
+        uses: paulhatch/semantic-version@v5.0.0
         with:
-          format: '${major}.${minor}.${patch}-dev${increment}'
+          version_format: '${major}.${minor}.${patch}-dev${increment}'
 
       - name: Setup Job Matrixes
         id: generateMatrix
