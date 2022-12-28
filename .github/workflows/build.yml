@@ -37,7 +37,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          lfs: true
           token: ${{ secrets.token }}
           fetch-depth: 0 # Needed for semantic versioning below
 
@@ -145,14 +144,11 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
     steps:
-      - uses: actions/checkout@v2
+      - name: Cached LFS checkout
+        uses: nschloe/action-cached-lfs-checkout@v1.1.2
         with:
-          lfs: true
           token: ${{ secrets.token }}
           submodules: true
-
-      - name: Ensure LFS Assets Dereferenced
-        run: git lfs pull
 
       - name: Environment Variables
         id: inject
