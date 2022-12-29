@@ -144,11 +144,14 @@ jobs:
     strategy:
       matrix: ${{ fromJson(needs.meta.outputs.matrix) }}
     steps:
-      - name: Cached LFS checkout
-        uses: nschloe/action-cached-lfs-checkout@v1.1.2
+      - uses: actions/checkout@v2
         with:
+          lfs: true
           token: ${{ secrets.token }}
           submodules: true
+      
+      - name: Ensure LFS Assets Dereferenced
+        run: git lfs pull
 
       - name: Environment Variables
         id: inject
